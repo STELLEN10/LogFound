@@ -1,13 +1,17 @@
 "use client";
 
-import { Command, Moon, Sparkles } from "lucide-react";
-import { useCallback, useState } from "react";
+import { ChevronRight, Command, Moon, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const [commandOpen, setCommandOpen] = useState(false);
   const openCommand = useCallback(() => setCommandOpen(true), []);
+  useEffect(() => {
+    window.addEventListener("logfound:command", openCommand);
+    return () => window.removeEventListener("logfound:command", openCommand);
+  }, [openCommand]);
   useKeyboardShortcuts([{ key: "k", meta: true, handler: openCommand }, { key: "/", handler: openCommand }, { key: "Escape", handler: () => setCommandOpen(false) }]);
 
   return (
@@ -18,7 +22,7 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
         <div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={openCommand} aria-label="Open command menu"><Command className="mr-2 size-4" aria-hidden="true" />Command menu <kbd className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">⌘K</kbd></Button><span className="flex size-10 items-center justify-center rounded-md text-muted-foreground" title="Dark mode"><Moon className="size-4" aria-hidden="true" /><span className="sr-only">Dark mode enabled</span></span></div>
       </header>
       <main id="main-content">{children}</main>
-      {commandOpen && <div className="fixed inset-0 z-40 flex items-start justify-center bg-background/80 px-4 pt-[18vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Command menu" onClick={() => setCommandOpen(false)}><div className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Command className="size-4" aria-hidden="true" />Command menu</div><p className="text-sm text-muted-foreground">The command registry is ready for product actions.</p><Button className="mt-6 w-full" variant="secondary" onClick={() => setCommandOpen(false)}>Close <span className="ml-auto text-xs text-muted-foreground">Esc</span></Button></div></div>}
+      {commandOpen && <div className="fixed inset-0 z-40 flex items-start justify-center bg-background/80 px-4 pt-[18vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Command menu" onClick={() => setCommandOpen(false)}><div className="w-full max-w-lg rounded-xl border border-border bg-card p-3 shadow-2xl" onClick={(event) => event.stopPropagation()}><label className="flex items-center gap-2 border-b border-border px-3 pb-3 text-sm text-muted-foreground"><Command className="size-4" aria-hidden="true" /><span className="sr-only">Search commands</span><input autoFocus className="w-full bg-transparent outline-none placeholder:text-muted-foreground" placeholder="Search your workspace…" /></label><div className="p-2"><p className="px-2 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Suggested actions</p>{["Log a decision", "Ask Nova", "Open timeline", "Create project"].map((action) => <button key={action} onClick={() => setCommandOpen(false)} className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent"><span>{action}</span><ChevronRight className="size-4 text-muted-foreground" /></button>)}</div><Button className="w-full" variant="ghost" onClick={() => setCommandOpen(false)}>Close <span className="ml-auto text-xs text-muted-foreground">Esc</span></Button></div></div>}
     </div>
   );
 }
