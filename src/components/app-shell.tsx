@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Command, Moon, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -18,7 +19,7 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
     <div className="min-h-screen bg-background text-foreground">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">Skip to content</a>
       <header className="flex h-16 items-center justify-between border-b border-border/60 px-6">
-        <div className="flex items-center gap-3"><div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-4" aria-hidden="true" /></div><span className="font-semibold tracking-tight">Logfound</span></div>
+        <div className="flex items-center gap-3"><div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-4" aria-hidden="true" /></div><Link href="/" className="font-semibold tracking-tight">Logfound</Link><Link href="/intelligence" className="hidden rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:block">Intelligence</Link></div>
         <div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={openCommand} aria-label="Open command menu"><Command className="mr-2 size-4" aria-hidden="true" />Command menu <kbd className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">⌘K</kbd></Button><span className="flex size-10 items-center justify-center rounded-md text-muted-foreground" title="Dark mode"><Moon className="size-4" aria-hidden="true" /><span className="sr-only">Dark mode enabled</span></span></div>
       </header>
       <main id="main-content">{children}</main>
