@@ -3,5 +3,5 @@
 import { ThemeProvider } from "next-themes";
 
 export function Providers({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>{children}</ThemeProvider>;
+  return <ThemeProvider attribute="class" defaultTheme="midnight" themes={["midnight", "obsidian", "ocean", "aurora", "graphite"]} enableSystem={false} disableTransitionOnChange>{children}</ThemeProvider>;
 }
