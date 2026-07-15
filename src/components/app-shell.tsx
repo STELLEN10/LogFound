@@ -1,0 +1,24 @@
+"use client";
+
+import { Command, Moon, Sparkles } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+
+export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [commandOpen, setCommandOpen] = useState(false);
+  const openCommand = useCallback(() => setCommandOpen(true), []);
+  useKeyboardShortcuts([{ key: "k", meta: true, handler: openCommand }, { key: "/", handler: openCommand }, { key: "Escape", handler: () => setCommandOpen(false) }]);
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">Skip to content</a>
+      <header className="flex h-16 items-center justify-between border-b border-border/60 px-6">
+        <div className="flex items-center gap-3"><div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-4" aria-hidden="true" /></div><span className="font-semibold tracking-tight">Logfound</span></div>
+        <div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={openCommand} aria-label="Open command menu"><Command className="mr-2 size-4" aria-hidden="true" />Command menu <kbd className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground">⌘K</kbd></Button><span className="flex size-10 items-center justify-center rounded-md text-muted-foreground" title="Dark mode"><Moon className="size-4" aria-hidden="true" /><span className="sr-only">Dark mode enabled</span></span></div>
+      </header>
+      <main id="main-content">{children}</main>
+      {commandOpen && <div className="fixed inset-0 z-40 flex items-start justify-center bg-background/80 px-4 pt-[18vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Command menu" onClick={() => setCommandOpen(false)}><div className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Command className="size-4" aria-hidden="true" />Command menu</div><p className="text-sm text-muted-foreground">The command registry is ready for product actions.</p><Button className="mt-6 w-full" variant="secondary" onClick={() => setCommandOpen(false)}>Close <span className="ml-auto text-xs text-muted-foreground">Esc</span></Button></div></div>}
+    </div>
+  );
+}
