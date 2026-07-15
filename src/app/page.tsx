@@ -1,8 +1,18 @@
-import { ArrowUpRight, Bot, Database, Keyboard, ShieldCheck } from "lucide-react";
-import { agentList } from "@/lib/agents/registry";
+import { Dashboard } from "@/components/dashboard/dashboard";
+import { createClient } from "@/lib/supabase/server";
 
-const foundations = [{ icon: Database, title: "Data boundary", description: "Supabase clients are isolated behind server and browser interfaces." }, { icon: Bot, title: "Agent registry", description: `${agentList.length} typed agent identities are ready to power product workflows.` }, { icon: Keyboard, title: "Command-ready", description: "Keyboard-first interactions are part of the shell, not an afterthought." }, { icon: ShieldCheck, title: "Safe by default", description: "Strict TypeScript, accessible primitives, and environment validation." }];
+async function getUsername() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const fullName = user?.user_metadata.full_name;
+    if (typeof fullName === "string" && fullName.trim()) return fullName.trim().split(" ")[0];
+    return user?.email?.split("@")[0] || "there";
+  } catch {
+    return "there";
+  }
+}
 
-export default function Home() {
-  return <section className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col justify-center px-6 py-20"><div className="max-w-3xl"><p className="mb-5 text-sm font-medium uppercase tracking-[0.2em] text-primary">The foundation is in place</p><h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">A considered home for <span className="text-primary">finding signal.</span></h1><p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">Logfound is ready for product surfaces to be composed on top of a durable, keyboard-friendly application core.</p></div><div className="mt-16 grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2">{foundations.map(({ icon: Icon, title, description }) => <div key={title} className="bg-card p-6"><Icon className="mb-8 size-5 text-primary" aria-hidden="true" /><h2 className="font-medium">{title}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p></div>)}</div><div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground"><ArrowUpRight className="size-4 text-primary" aria-hidden="true" />Press <kbd className="rounded border border-border px-1.5 py-0.5 text-xs">⌘K</kbd> to inspect the command surface.</div></section>;
+export default async function Home() {
+  return <Dashboard username={await getUsername()} />;
 }
