@@ -1,6 +1,6 @@
 "use client";
 
-import { Command, Compass, Github, Keyboard, Mic, PlayCircle, Search, Settings2, Sparkles, Users, X } from "lucide-react";
+import { Bot, Command, Compass, Github, Keyboard, Mic, PlayCircle, Search, Settings2, Sparkles, Users, X } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Onboarding } from "@/components/experience/onboarding";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 
-const commands = [{ label: "Open dashboard", detail: "Your founder workspace", Icon: Compass, path: "/" }, { label: "Ask Nova", detail: "Open the strategy room", Icon: Sparkles, path: "/intelligence" }, { label: "Open GitHub Intelligence", detail: "Understand repository movement", Icon: Github, path: "/github" }, { label: "Launch Voice Workspace", detail: "Think with the full context in mind", Icon: Mic, path: "/voice" }, { label: "Replay a decision", detail: "Trace the story behind the work", Icon: PlayCircle, path: "/replay" }, { label: "Open collaboration", detail: "Projects, people, and shared memory", Icon: Users, path: "/collaboration" }, { label: "Open settings", detail: "Theme, voice, privacy, and shortcuts", Icon: Settings2, path: "/settings" }, { label: "Start product tour", detail: "A guided Logfound introduction", Icon: Keyboard, path: "tour" }];
+const commands = [{ label: "Open dashboard", detail: "Your founder workspace", Icon: Compass, path: "/" }, { label: "Ask Nova", detail: "Open the strategy room", Icon: Sparkles, path: "/intelligence" }, { label: "Open AI workspace", detail: "Run the secured GPT-5.6 layer", Icon: Bot, path: "/ai" }, { label: "Open GitHub Intelligence", detail: "Understand repository movement", Icon: Github, path: "/github" }, { label: "Launch Voice Workspace", detail: "Think with the full context in mind", Icon: Mic, path: "/voice" }, { label: "Replay a decision", detail: "Trace the story behind the work", Icon: PlayCircle, path: "/replay" }, { label: "Open collaboration", detail: "Projects, people, and shared memory", Icon: Users, path: "/collaboration" }, { label: "Open settings", detail: "Theme, voice, privacy, and shortcuts", Icon: Settings2, path: "/settings" }, { label: "Start product tour", detail: "A guided Logfound introduction", Icon: Keyboard, path: "tour" }];
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const [commandOpen, setCommandOpen] = useState(false); const [query, setQuery] = useState(""); const [onboardingOpen, setOnboardingOpen] = useState(false);
