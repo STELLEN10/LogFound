@@ -1,5 +1,6 @@
 export const agentIds = ["nova", "atlas", "echo", "pulse", "compass"] as const;
 export type AiAgentId = (typeof agentIds)[number];
+export type AiProviderName = "gemini" | "openai";
 export type AiOperation = "ask" | "collaborate" | "summary" | "weekly_review" | "replay" | "founder_dna";
 export type AiPhase = "thinking" | "searching" | "analyzing" | "collaborating" | "generating";
 
@@ -37,7 +38,7 @@ export type AiMemoryRecord = {
 };
 
 export type AiStreamEvent =
-  | { type: "meta"; model: string; operation: AiOperation; agents: AiAgentId[] }
+  | { type: "meta"; provider: AiProviderName; model: string; operation: AiOperation; agents: AiAgentId[] }
   | { type: "status"; phase: AiPhase; message: string }
   | { type: "contribution"; contribution: AgentContribution }
   | { type: "delta"; text: string }
