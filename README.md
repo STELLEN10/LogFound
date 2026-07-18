@@ -109,7 +109,7 @@ Set the values described in [Environment Variables](#environment-variables). The
 
 1. Create a project in the [Supabase dashboard](https://supabase.com/dashboard).
 2. Copy the project URL and publishable/anon key into `.env.local`.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser authentication. The server also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` as deployment aliases.
 4. Configure Supabase Auth providers and redirect URLs when adding an application sign-in flow.
 
 The repository already refreshes Supabase sessions in middleware and exposes typed browser/server clients. Apply the included GitHub migration before enabling the OAuth flow. It creates encrypted-token storage and project-repository links with Row Level Security enabled and no browser-role table access.
@@ -123,7 +123,7 @@ AI_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-Never use a `NEXT_PUBLIC_` prefix for any AI key. Once running, open `/ai` or **Settings → AI provider** and select **Test AI**, or request `GET /api/ai/health`, to confirm the connection without exposing the key.
+Create a Gemini key in [Google AI Studio](https://aistudio.google.com/app/apikey), then place it only in the server-side `GEMINI_API_KEY` variable. Never use a `NEXT_PUBLIC_` prefix for any AI key. Once running, open `/ai` or **Settings → AI provider** and select **Test Connection**, or request `GET /api/ai/health`, to confirm the connection without exposing the key.
 
 To switch providers later, configure the corresponding server key and change the provider selection:
 
@@ -166,8 +166,12 @@ Copy `.env.example` to `.env.local`. These are the only environment variables cu
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Optional | Supabase project URL. Enables the existing Supabase browser, server, and middleware client boundaries. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional | Supabase publishable/anon key paired with the project URL. It is intended for client-safe use under Supabase's RLS model. |
+| `SUPABASE_URL` | Optional alias | Server-side alias for the Supabase project URL. `NEXT_PUBLIC_SUPABASE_URL` remains the browser-compatible convention. |
+| `SUPABASE_ANON_KEY` | Optional alias | Server-side alias for the Supabase publishable/anon key. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for GitHub OAuth | Server-only Supabase key used to access the locked-down GitHub connection tables. Never expose or prefix it with `NEXT_PUBLIC_`. |
 | `NEXT_PUBLIC_APP_URL` | Required for GitHub OAuth | Absolute public Logfound origin, for example `http://localhost:3000`. It is used to construct the exact GitHub OAuth callback URL. |
+| `NEXTAUTH_SECRET` | Reserved | Compatibility setting for a future NextAuth adapter. Current authentication uses Supabase sessions. |
+| `NEXTAUTH_URL` | Reserved | Compatibility base URL for a future NextAuth adapter; use `http://localhost:3000` locally. |
 | `AI_PROVIDER` | Optional | Active provider: `gemini` (default) or `openai`. |
 | `AI_MODEL` | Optional | Active model override. If blank, the provider default is `gemini-2.5-flash` for Gemini or `OPENAI_MODEL`/`gpt-5.6` for OpenAI. |
 | `GEMINI_API_KEY` | Required when `AI_PROVIDER=gemini` | Secret Google AI Studio key read only by server-side route handlers. Never expose it to the browser or commit it. |
