@@ -1,5 +1,5 @@
 import { aiAgents } from "./agents";
-import { getOpenAiClient, AI_MODEL } from "./client";
+import { getAiClient } from "./client";
 import { buildAgentInstructions, buildConsensusInstructions } from "./prompts";
 import type { AgentContribution, AiAgentId, AiOperation, WorkspaceContext } from "./types";
 
@@ -19,17 +19,15 @@ export function selectAgents(question: string, operation: AiOperation, requested
 
 export async function generateAgentContribution(agentId: AiAgentId, question: string, context: WorkspaceContext): Promise<AgentContribution> {
   const agent = aiAgents[agentId];
-  const response = await getOpenAiClient().responses.create({ model: AI_MODEL, instructions: buildAgentInstructions(agent.systemPrompt, context), input: question, max_output_tokens: 700 });
-  return { agent: agentId, name: agent.name, content: response.output_text || "No recommendation was generated." };
+  const response = await getAiClient().generate({ systemInstruction: buildAgentInstructions(agent.systemPrompt, context), input: question, maxOutputTokens: 700 });
+  return { agent: agentId, name: agent.name, content: response };
 }
 
 export async function* streamSingleAgent(agentId: AiAgentId, question: string, context: WorkspaceContext) {
   const agent = aiAgents[agentId];
-  const stream = await getOpenAiClient().responses.create({ model: AI_MODEL, instructions: buildAgentInstructions(agent.systemPrompt, context), input: question, max_output_tokens: 900, stream: true });
-  for await (const event of stream) if (event.type === "response.output_text.delta") yield event.delta;
+  yield* getAiClient().stream({ systemInstruction: buildAgentInstructions(agent.systemPrompt, context), input: question, maxOutputTokens: 900 });
 }
 
 export async function generateConsensus(question: string, context: WorkspaceContext, contributions: AgentContribution[]) {
-  const response = await getOpenAiClient().responses.create({ model: AI_MODEL, instructions: buildConsensusInstructions(context, contributions), input: `Founder question: ${question}`, max_output_tokens: 1_000 });
-  return response.output_text || "No consensus was generated.";
+  return getAiClient().generate({ systemInstruction: buildConsensusInstructions(context, contributions), input: `Founder question: ${question}`, maxOutputTokens: 1_000 });
 }
