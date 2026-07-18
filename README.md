@@ -109,7 +109,7 @@ Set the values described in [Environment Variables](#environment-variables). The
 
 1. Create a project in the [Supabase dashboard](https://supabase.com/dashboard).
 2. Copy the project URL and publishable/anon key into `.env.local`.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or the server aliases `SUPABASE_URL` and `SUPABASE_ANON_KEY` when your hosting setup injects those values).
+3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser authentication. The server also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` as deployment aliases.
 4. Configure Supabase Auth providers and redirect URLs when adding an application sign-in flow.
 
 The repository already refreshes Supabase sessions in middleware and exposes typed browser/server clients. Apply the included GitHub migration before enabling the OAuth flow. It creates encrypted-token storage and project-repository links with Row Level Security enabled and no browser-role table access.
