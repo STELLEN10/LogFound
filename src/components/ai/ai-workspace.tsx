@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { LogfoundLogo } from "@/components/brand/logfound-logo";
+import { ReasoningNetwork } from "@/components/ai/reasoning-network";
 import { cn } from "@/lib/utils";
 import type {
   AgentContribution,
@@ -57,6 +59,23 @@ const phaseCopy: Record<AiPhase, string> = {
   generating: "Generating",
 };
 
+const reasoningSteps = [
+  "Reading GitHub commits",
+  "Reading founder memory",
+  "Reading project decisions",
+  "Building engineering context",
+  "Council discussion",
+  "Generating recommendation",
+];
+
+const phaseStep: Record<AiPhase, number> = {
+  thinking: 0,
+  searching: 1,
+  analyzing: 3,
+  collaborating: 4,
+  generating: 5,
+};
+
 export function AiWorkspace() {
   const [question, setQuestion] = useState(
     "Should I launch onboarding this week?",
@@ -77,6 +96,7 @@ export function AiWorkspace() {
     provider?: string;
     model?: string;
   } | null>(null);
+  const activeStep = phase ? phaseStep[phase] : 0;
 
   async function run() {
     if (!question.trim() || running) return;
@@ -256,6 +276,59 @@ export function AiWorkspace() {
               </div>
             </div>
           )}
+          {running && (
+            <div
+              className="mt-4 rounded-xl border border-border/80 bg-background/25 p-4"
+              aria-live="polite"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                  Intelligence pipeline
+                </p>
+                <span className="text-xs text-muted-foreground">
+                  {Math.min(activeStep + 1, reasoningSteps.length)} /{" "}
+                  {reasoningSteps.length}
+                </span>
+              </div>
+              <div className="space-y-2.5">
+                {reasoningSteps.map((step, index) => (
+                  <div key={step} className="flex items-center gap-3 text-xs">
+                    <span
+                      className={cn(
+                        "size-1.5 shrink-0 rounded-full transition-colors duration-500",
+                        index <= activeStep
+                          ? "bg-primary shadow-[0_0_10px_hsl(var(--primary)/.8)]"
+                          : "bg-muted-foreground/40",
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "w-44 shrink-0 transition-colors duration-500",
+                        index === activeStep
+                          ? "text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {step}…
+                    </span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary/80">
+                      <span
+                        className={cn(
+                          "block h-full rounded-full bg-primary/80 transition-all duration-700",
+                          index < activeStep
+                            ? "w-full"
+                            : index === activeStep
+                              ? "w-2/3 animate-progress"
+                              : "w-0",
+                        )}
+                      />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {running && <ReasoningNetwork />}
           {error && (
             <div className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
               <p className="flex items-center gap-2 font-medium text-destructive-foreground">
@@ -291,14 +364,23 @@ export function AiWorkspace() {
                   ? "Unified recommendation"
                   : "Recommendation"}
               </p>
+              <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/80">
+                Recommendation ready
+              </p>
               <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
                 {output}
+                {running && (
+                  <span className="ml-0.5 inline-block text-primary motion-safe:animate-pulse">
+                    ▋
+                  </span>
+                )}
               </div>
             </article>
           )}
         </div>
         <aside className="space-y-5">
           <section className="rounded-xl border border-border bg-card/55 p-5">
+            <LogfoundLogo compact className="mb-4" />
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
               AI health check
             </p>
