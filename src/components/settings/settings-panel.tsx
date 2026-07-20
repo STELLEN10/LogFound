@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { GithubConnectionSettings } from "@/components/github/github-connection-settings";
 import { AiProviderSettings } from "@/components/ai/ai-provider-settings";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +47,7 @@ export function SettingsPanel() {
 
   return <div className="mx-auto w-full max-w-5xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
     <section className="animate-rise border-b border-border/70 pb-9">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Settings</p>
+      <div className="flex items-center justify-between gap-4"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Settings</p><div className="flex items-center gap-2 rounded-lg border border-border bg-card/55 px-2 py-1"><span className="px-1 text-xs text-muted-foreground">Workspace session</span><LogoutButton /></div></div>
       <h1 className="mt-3 text-4xl font-semibold tracking-[-0.035em] sm:text-5xl">Make the workspace yours.</h1>
       <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">A calm operating system should fit the way you think, speak, decide, and return to the work.</p>
     </section>

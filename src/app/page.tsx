@@ -1,13 +1,11 @@
 import { Dashboard } from "@/components/dashboard/dashboard";
-import { createClient } from "@/lib/supabase/server";
+import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
+import { cookies } from "next/headers";
 
 async function getUsername() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const fullName = user?.user_metadata.full_name;
-    if (typeof fullName === "string" && fullName.trim()) return fullName.trim().split(" ")[0];
-    return user?.email?.split("@")[0] || "there";
+    const session = await verifySessionToken((await cookies()).get(AUTH_COOKIE_NAME)?.value);
+    return session?.user.name || session?.user.username || "there";
   } catch {
     return "there";
   }
