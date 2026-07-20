@@ -7,13 +7,13 @@ import { retryableProviderError, withRetry, withTimeout } from "./runtime";
 function mapGeminiError(error: unknown): AiProviderError {
   if (error instanceof AiProviderError) return error;
   if (error instanceof ApiError) {
-    if (error.status === 401 || error.status === 403) return new AiProviderError("invalid_api_key", "Gemini authentication failed. Verify GEMINI_API_KEY.", 503);
-    if (error.status === 429) return new AiProviderError("rate_limited", "Gemini is busy right now. Please try again shortly.", 429);
-    if (error.status >= 500) return new AiProviderError("provider_unavailable", "Gemini is temporarily unavailable. Please try again.", 503);
-    return new AiProviderError("provider_error", "Gemini could not complete this request.", 502);
+    if (error.status === 401 || error.status === 403) return new AiProviderError("invalid_api_key", "Gemini authentication failed. Verify GEMINI_API_KEY.", 503, error);
+    if (error.status === 429) return new AiProviderError("rate_limited", "Gemini is busy right now. Please try again shortly.", 429, error);
+    if (error.status >= 500) return new AiProviderError("provider_unavailable", "Gemini is temporarily unavailable. Please try again.", 503, error);
+    return new AiProviderError("provider_error", "Gemini could not complete this request.", 502, error);
   }
-  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) return new AiProviderError("timeout", "The Gemini request took too long. Please try again.", 504);
-  return new AiProviderError("provider_unavailable", "Gemini is temporarily unavailable. Please try again.", 503);
+  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) return new AiProviderError("timeout", "The Gemini request took too long. Please try again.", 504, error);
+  return new AiProviderError("provider_unavailable", "Gemini is temporarily unavailable. Please try again.", 503, error);
 }
 
 function shouldRetryGemini(error: unknown) {
