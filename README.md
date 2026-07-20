@@ -8,7 +8,7 @@ Built for OpenAI Build Week, Logfound treats product work as a living system rat
 
 ## Features
 
-- **Supabase-ready authentication** — typed browser, server, and middleware boundaries refresh sessions when Supabase is configured. The dashboard can personalize its greeting from the active session.
+- **Username/password authentication** — a production-safe demo Credentials flow signs HTTP-only sessions, protects workspace routes, persists sessions across refreshes, and requires no email address.
 - **Founder dashboard** — a focused daily workspace with project momentum, streaks, active work, timeline activity, team discussion, focus planning, quick actions, and keyboard shortcuts.
 - **Timeline** — an elegant activity feed for decisions, notes, milestones, repository changes, and AI recommendations.
 - **AI agents** — five distinct server-side specialists: **Nova** for founder strategy, **Atlas** for engineering, **Echo** for founder memory, **Pulse** for market signals, and **Compass** for long-term direction. Focused requests are routed to the right agent; mixed requests use a collaborative council and synthesis.
@@ -112,9 +112,15 @@ Set the values described in [Environment Variables](#environment-variables). The
 3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser authentication. The server also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` as deployment aliases.
 4. Configure Supabase Auth providers and redirect URLs when adding an application sign-in flow.
 
-The repository already refreshes Supabase sessions in middleware and exposes typed browser/server clients. Apply the included GitHub migration before enabling the OAuth flow. It creates encrypted-token storage and project-repository links with Row Level Security enabled and no browser-role table access.
+The repository exposes typed browser/server Supabase clients for persistence. Apply the GitHub migrations, including `20260720_demo_auth_users.sql`, before enabling repository storage. They create encrypted-token storage, stable workspace-user identities, and project-repository links with Row Level Security enabled and no browser-role table access.
 
-### 4. Configure the AI provider
+### 4. Configure demo authentication
+
+Logfound uses a signed, HTTP-only session cookie for the demo workspace. No email address is required. In development, the default credentials are `founder` / `logfound-demo`; override them with `LOGFOUND_DEMO_USERNAME` and `LOGFOUND_DEMO_PASSWORD` in `.env.local`. For production, set `NEXTAUTH_SECRET` and prefer `LOGFOUND_DEMO_PASSWORD_HASH` with a bcrypt hash instead of a plaintext password.
+
+Open [http://localhost:3000/login](http://localhost:3000/login) to sign in. Protected pages and API routes redirect or return `401` until a session is present. Use **Settings → Workspace session** to sign out.
+
+### 5. Configure the AI provider
 
 Gemini is active by default. Add its server-side key to `.env.local`:
 
@@ -134,17 +140,17 @@ OPENAI_API_KEY=your_openai_api_key
 
 Both adapters implement the same server-side contract for generation, streaming, timeout handling, retries, and safe error mapping. Agent prompts and API routes do not change.
 
-### 5. Configure GitHub OAuth
+### 6. Configure GitHub OAuth
 
 1. Apply [`supabase/migrations/20260718_github_connections.sql`](supabase/migrations/20260718_github_connections.sql) to your Supabase project. For a Supabase CLI workflow, run `supabase db push` after linking the project.
 2. Create an OAuth App in GitHub’s developer settings.
 3. Set its **Authorization callback URL** to `http://localhost:3000/api/github/oauth/callback` for local development, or `https://your-domain.com/api/github/oauth/callback` in production.
 4. Add the GitHub client ID and client secret to `.env.local`, along with the server-only Supabase service role key and a base64-encoded 32-byte encryption key.
-5. Sign in to Logfound through your Supabase authentication flow, open **Settings**, and select **Connect GitHub**.
+5. Sign in at `/login`, open **Settings**, and select **Connect GitHub**. The OAuth flow uses the same stable authenticated workspace identity as the demo session.
 
 The connection requests `read:user` and `repo` scopes so it can read repositories a founder is permitted to access. GitHub OAuth Apps do not offer a read-only scope for private repositories; Logfound’s service layer makes read-only GitHub requests and never exposes the access token to the browser.
 
-### 6. Start the development server
+### 7. Start the development server
 
 ```bash
 npm run dev
@@ -170,8 +176,11 @@ Copy `.env.example` to `.env.local`. These are the only environment variables cu
 | `SUPABASE_ANON_KEY` | Optional alias | Server-side alias for the Supabase publishable/anon key. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for GitHub OAuth | Server-only Supabase key used to access the locked-down GitHub connection tables. Never expose or prefix it with `NEXT_PUBLIC_`. |
 | `NEXT_PUBLIC_APP_URL` | Required for GitHub OAuth | Absolute public Logfound origin, for example `http://localhost:3000`. It is used to construct the exact GitHub OAuth callback URL. |
-| `NEXTAUTH_SECRET` | Reserved | Compatibility setting for a future NextAuth adapter. Current authentication uses Supabase sessions. |
-| `NEXTAUTH_URL` | Reserved | Compatibility base URL for a future NextAuth adapter; use `http://localhost:3000` locally. |
+| `NEXTAUTH_SECRET` | Required in production | Secret used to sign the Logfound demo session JWT. Generate a long random value and keep it server-only. |
+| `NEXTAUTH_URL` | Optional | Canonical application URL retained for NextAuth-compatible deployments; use `http://localhost:3000` locally. |
+| `LOGFOUND_DEMO_USERNAME` | Optional | Username accepted by the demo Credentials flow; defaults to `founder` in development. |
+| `LOGFOUND_DEMO_PASSWORD` | Development only | Plaintext demo password; defaults to `logfound-demo` locally. Prefer `LOGFOUND_DEMO_PASSWORD_HASH` in production. |
+| `LOGFOUND_DEMO_PASSWORD_HASH` | Production preferred | Bcrypt hash for the demo password. Takes precedence over `LOGFOUND_DEMO_PASSWORD`. |
 | `AI_PROVIDER` | Optional | Active provider: `gemini` (default) or `openai`. |
 | `AI_MODEL` | Optional | Active model override. If blank, the provider default is `gemini-2.5-flash` for Gemini or `OPENAI_MODEL`/`gpt-5.6` for OpenAI. |
 | `GEMINI_API_KEY` | Required when `AI_PROVIDER=gemini` | Secret Google AI Studio key read only by server-side route handlers. Never expose it to the browser or commit it. |
