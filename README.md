@@ -4,7 +4,7 @@
 
 Built for OpenAI Build Week, Logfound treats product work as a living system rather than a collection of disconnected tasks. Decisions, repository activity, founder context, and AI guidance are designed to be read together.
 
-> **Project status:** the product is a polished, functional prototype with a live server-side Gemini integration and a provider-neutral AI architecture. Several product surfaces use realistic seeded workspace data while their persistence and third-party sync layers are prepared for production implementation.
+> **Project status:** the product is a polished, functional prototype with a live server-side Groq integration and a provider-neutral AI architecture. Several product surfaces use realistic seeded workspace data while their persistence and third-party sync layers are prepared for production implementation.
 
 ## Features
 
@@ -12,7 +12,7 @@ Built for OpenAI Build Week, Logfound treats product work as a living system rat
 - **Founder dashboard** — a focused daily workspace with project momentum, streaks, active work, timeline activity, team discussion, focus planning, quick actions, and keyboard shortcuts.
 - **Timeline** — an elegant activity feed for decisions, notes, milestones, repository changes, and AI recommendations.
 - **AI agents** — five distinct server-side specialists: **Nova** for founder strategy, **Atlas** for engineering, **Echo** for founder memory, **Pulse** for market signals, and **Compass** for long-term direction. Focused requests are routed to the right agent; mixed requests use a collaborative council and synthesis.
-- **Streaming AI workspace** — progressive server-sent responses expose thinking states, individual agent contributions, a shared recommendation, and an AI provider health check. Gemini is active by default; the browser never receives an API key.
+- **Streaming AI workspace** — progressive server-sent responses expose thinking states, individual agent contributions, a shared recommendation, and an AI provider health check. Groq is active by default; the browser never receives an API key.
 - **Founder Intelligence** — a strategy-room experience that brings independent agent perspectives, trade-offs, risks, confidence, and a recommended action plan into one decision surface.
 - **GitHub OAuth and Intelligence** — authenticated users can connect GitHub from Settings, securely select one or more repositories for the active project, and load live commits, pull requests, issues, branches, and contributors through server-only APIs. The legacy intelligence view still includes curated demo context alongside connected repository data.
 - **Founder Replay** — an immersive, connected view of a decision's original problem, conversations, reasoning, commits, outcomes, and lessons.
@@ -32,7 +32,7 @@ Built for OpenAI Build Week, Logfound treats product work as a living system rat
 - shadcn/ui-compatible component primitives built with [Class Variance Authority](https://cva.style/)
 - [Framer Motion](https://www.framer.com/motion/) for interface motion
 - [Supabase](https://supabase.com/) with `@supabase/ssr` and `@supabase/supabase-js`
-- [Google Gen AI JavaScript SDK](https://github.com/googleapis/js-genai) for the active server-side Gemini runtime
+- [Groq JavaScript SDK](https://github.com/groq/groq-typescript) for the active server-side Groq runtime
 - [OpenAI Node SDK](https://github.com/openai/openai-node) for the provider-compatible fallback adapter
 - [Zod](https://zod.dev/) for API input validation
 - [`next-themes`](https://github.com/pacocoursey/next-themes) for theme management
@@ -73,7 +73,7 @@ src/
     └── founder-memory.ts        # Seeded replay, review, and founder-profile data
 ```
 
-The `src/lib/ai/providers` directory contains the Gemini and OpenAI adapters. The rest of the application depends only on the provider-neutral client and never imports either SDK.
+The `src/lib/ai/providers` directory contains the Groq and OpenAI adapters. The rest of the application depends only on the provider-neutral client and never imports either SDK.
 
 ## Installation
 
@@ -81,7 +81,7 @@ The `src/lib/ai/providers` directory contains the Gemini and OpenAI adapters. Th
 
 - Node.js 20.9 or later
 - npm
-- A Gemini API key to enable live AI features
+- A Groq API key to enable live AI features
 - A Supabase project with an authenticated Logfound user to enable GitHub connection storage
 - A GitHub OAuth App to enable repository access
 
@@ -103,7 +103,7 @@ cp .env.example .env.local
 Copy-Item .env.example .env.local
 ```
 
-Set the values described in [Environment Variables](#environment-variables). The UI can run without configuration; live AI requires `GEMINI_API_KEY` when Gemini is selected.
+Set the values described in [Environment Variables](#environment-variables). The UI can run without configuration; live AI requires `GROQ_API_KEY` when Groq is selected.
 
 ### 3. Configure Supabase (optional for the current prototype)
 
@@ -122,14 +122,15 @@ Open [http://localhost:3000/login](http://localhost:3000/login) to sign in. Prot
 
 ### 5. Configure the AI provider
 
-Gemini is active by default. Add its server-side key to `.env.local`:
+Groq is active by default. Add its server-side key to `.env.local`:
 
 ```bash
-AI_PROVIDER=gemini
-GEMINI_API_KEY=your_gemini_api_key
+AI_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-Create a Gemini key in [Google AI Studio](https://aistudio.google.com/app/apikey), then place it only in the server-side `GEMINI_API_KEY` variable. Never use a `NEXT_PUBLIC_` prefix for any AI key. Once running, open `/ai` or **Settings → AI provider** and select **Test Connection**, or request `GET /api/ai/health`, to confirm the connection without exposing the key.
+Create a free Groq key in the [Groq Console](https://console.groq.com/keys), then place it only in the server-side `GROQ_API_KEY` variable. Never use a `NEXT_PUBLIC_` prefix for any AI key. Once running, open `/ai` or **Settings → AI provider** and select **Test Connection**, or request `GET /api/ai/health`, to confirm the connection without exposing the key.
 
 To switch providers later, configure the corresponding server key and change the provider selection:
 
@@ -181,16 +182,17 @@ Copy `.env.example` to `.env.local`. These are the only environment variables cu
 | `LOGFOUND_DEMO_USERNAME` | Optional | Username accepted by the demo Credentials flow; defaults to `founder` in development. |
 | `LOGFOUND_DEMO_PASSWORD` | Development only | Plaintext demo password; defaults to `logfound-demo` locally. Prefer `LOGFOUND_DEMO_PASSWORD_HASH` in production. |
 | `LOGFOUND_DEMO_PASSWORD_HASH` | Production preferred | Bcrypt hash for the demo password. Takes precedence over `LOGFOUND_DEMO_PASSWORD`. |
-| `AI_PROVIDER` | Optional | Active provider: `gemini` (default) or `openai`. |
-| `AI_MODEL` | Optional | Active model override. If blank, the provider default is `gemini-2.5-flash` for Gemini or `OPENAI_MODEL`/`gpt-5.6` for OpenAI. |
-| `GEMINI_API_KEY` | Required when `AI_PROVIDER=gemini` | Secret Google AI Studio key read only by server-side route handlers. Never expose it to the browser or commit it. |
+| `AI_PROVIDER` | Optional | Active provider: `groq` (default) or `openai`. |
+| `AI_MODEL` | Optional | Active model override. If blank, the provider default is `GROQ_MODEL`/`llama-3.3-70b-versatile` for Groq or `OPENAI_MODEL`/`gpt-5.6` for OpenAI. |
+| `GROQ_API_KEY` | Required when `AI_PROVIDER=groq` | Secret Groq Console key read only by server-side route handlers. Never expose it to the browser or commit it. |
+| `GROQ_MODEL` | Optional | Groq chat-completions model; defaults to `llama-3.3-70b-versatile`. |
 | `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` | Secret OpenAI key read only by the OpenAI adapter. Keep it server-only. |
 | `OPENAI_MODEL` | Optional fallback | Legacy OpenAI model fallback when `AI_PROVIDER=openai` and `AI_MODEL` is not set. |
 | `GITHUB_CLIENT_ID` | Required for GitHub OAuth | GitHub OAuth App client ID, read only by server route handlers. |
 | `GITHUB_CLIENT_SECRET` | Required for GitHub OAuth | GitHub OAuth App client secret. Keep it server-only. |
 | `GITHUB_TOKEN_ENCRYPTION_KEY` | Required for GitHub OAuth | Base64-encoded 32-byte AES-256-GCM key used to encrypt OAuth access tokens before persistence. Generate it with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. |
 
-For Vercel deployments, configure the same values in the project's Environment Variables settings. Keep `GEMINI_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_CLIENT_SECRET`, and `GITHUB_TOKEN_ENCRYPTION_KEY` scoped to server runtime only.
+For Vercel deployments, configure the same values in the project's Environment Variables settings. Keep `GROQ_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `GITHUB_CLIENT_SECRET`, and `GITHUB_TOKEN_ENCRYPTION_KEY` scoped to server runtime only.
 
 ## Architecture
 
@@ -211,8 +213,8 @@ Supabase SSR clients live in `src/lib/supabase` for browser, server, and middlew
 `src/lib/ai` keeps provider concerns server-only and separate from the UI:
 
 - `client.ts` exposes the one provider-neutral AI client and maps configuration, authentication, rate-limit, timeout, and network failures to safe responses.
-- `providers/index.ts` selects Gemini or OpenAI from `AI_PROVIDER` and resolves the active model.
-- `providers/gemini.ts` uses the official `@google/genai` SDK for chat generation and streamed chat responses.
+- `providers/index.ts` selects Groq or OpenAI from `AI_PROVIDER` and resolves the active model.
+- `providers/groq.ts` uses the official Groq SDK for chat-completions generation and streamed responses.
 - `providers/openai.ts` keeps the official OpenAI SDK behind the same contract for a future provider switch.
 - `providers/runtime.ts` shares timeout and retry behavior across adapters.
 - `agents.ts` defines the system prompt, responsibilities, personality, expertise, and response style for Nova, Atlas, Echo, Pulse, and Compass.
@@ -248,7 +250,7 @@ All generated work remains in the repository as conventional TypeScript, React, 
 
 ### How AI powers the product
 
-When an AI key is configured, the application sends founder requests only to the server-side AI route. The router chooses an appropriate specialist or runs a collaborative workflow, supplies relevant workspace context, streams contributions and conclusions to the interface, and can capture the interaction in the memory abstraction. Gemini is the active runtime for founder assistance, strategy and engineering summaries, decision support, weekly reviews, replay interpretation, and Founder DNA reflections. The OpenAI adapter supports the same operations when `AI_PROVIDER=openai`.
+When an AI key is configured, the application sends founder requests only to the server-side AI route. The router chooses an appropriate specialist or runs a collaborative workflow, supplies relevant workspace context, streams contributions and conclusions to the interface, and can capture the interaction in the memory abstraction. Groq is the active runtime for founder assistance, strategy and engineering summaries, decision support, weekly reviews, replay interpretation, and Founder DNA reflections. The OpenAI adapter supports the same operations when `AI_PROVIDER=openai`.
 
 AI recommendations are decision support, not an autonomous source of truth. Founders should review suggestions and verify any product, customer, repository, or market claims against their own evidence.
 

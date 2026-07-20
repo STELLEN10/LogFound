@@ -1,6 +1,6 @@
-export type AiProviderName = "gemini" | "openai";
+export type AiProviderName = "groq" | "openai";
 
-export type AiProviderErrorCode = "missing_api_key" | "invalid_api_key" | "rate_limited" | "timeout" | "provider_unavailable" | "provider_error" | "unsupported_provider";
+export type AiProviderErrorCode = "missing_api_key" | "invalid_api_key" | "rate_limited" | "quota_exceeded" | "model_not_found" | "timeout" | "network_error" | "provider_unavailable" | "provider_error" | "unsupported_provider";
 
 export class AiProviderError extends Error {
   constructor(public readonly code: AiProviderErrorCode, message: string, public readonly status = 503, public readonly cause?: unknown) {
