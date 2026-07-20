@@ -1,8 +1,14 @@
 export const agentIds = ["nova", "atlas", "echo", "pulse", "compass"] as const;
 export type AiAgentId = (typeof agentIds)[number];
-export type AiProviderName = "groq" | "openai";
-export type AiOperation = "ask" | "collaborate" | "summary" | "weekly_review" | "replay" | "founder_dna";
-export type AiPhase = "thinking" | "searching" | "analyzing" | "collaborating" | "generating";
+export type AiOperation =
+  | "ask"
+  | "collaborate"
+  | "summary"
+  | "weekly_review"
+  | "replay"
+  | "founder_dna";
+export type AiPhase =
+  "thinking" | "searching" | "analyzing" | "collaborating" | "generating";
 
 export type WorkspaceContext = {
   project: string;
@@ -24,7 +30,11 @@ export type AiRequest = {
   stream?: boolean;
 };
 
-export type AgentContribution = { agent: AiAgentId; name: string; content: string };
+export type AgentContribution = {
+  agent: AiAgentId;
+  name: string;
+  content: string;
+};
 export type AiMemoryRecord = {
   id: string;
   question: string;
@@ -38,7 +48,13 @@ export type AiMemoryRecord = {
 };
 
 export type AiStreamEvent =
-  | { type: "meta"; provider: AiProviderName; model: string; operation: AiOperation; agents: AiAgentId[] }
+  | {
+      type: "meta";
+      provider: "groq";
+      model: string;
+      operation: AiOperation;
+      agents: AiAgentId[];
+    }
   | { type: "status"; phase: AiPhase; message: string }
   | { type: "contribution"; contribution: AgentContribution }
   | { type: "delta"; text: string }
