@@ -1,6 +1,6 @@
 export const agentIds = ["nova", "atlas", "echo", "pulse", "compass"] as const;
 export type AiAgentId = (typeof agentIds)[number];
-export type AiProviderName = "gemini" | "openai";
+export type AiProviderName = "groq" | "openai";
 export type AiOperation = "ask" | "collaborate" | "summary" | "weekly_review" | "replay" | "founder_dna";
 export type AiPhase = "thinking" | "searching" | "analyzing" | "collaborating" | "generating";
 

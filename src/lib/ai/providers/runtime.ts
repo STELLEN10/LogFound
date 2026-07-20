@@ -25,5 +25,5 @@ export async function withRetry<T>(operation: () => Promise<T>, shouldRetry: (er
 }
 
 export function retryableProviderError(error: unknown) {
-  return error instanceof AiProviderError && (error.code === "rate_limited" || error.code === "provider_unavailable");
+  return error instanceof AiProviderError && (error.code === "rate_limited" || error.code === "quota_exceeded" || error.code === "provider_unavailable");
 }
