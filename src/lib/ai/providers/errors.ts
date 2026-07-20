@@ -3,7 +3,7 @@ export type AiProviderName = "gemini" | "openai";
 export type AiProviderErrorCode = "missing_api_key" | "invalid_api_key" | "rate_limited" | "timeout" | "provider_unavailable" | "provider_error" | "unsupported_provider";
 
 export class AiProviderError extends Error {
-  constructor(public readonly code: AiProviderErrorCode, message: string, public readonly status = 503) {
+  constructor(public readonly code: AiProviderErrorCode, message: string, public readonly status = 503, public readonly cause?: unknown) {
     super(message);
     this.name = "AiProviderError";
   }
