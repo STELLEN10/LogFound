@@ -10,12 +10,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { AiProviderName } from "@/lib/ai/types";
 import { cn } from "@/lib/utils";
 
 type ProviderConfig = {
-  provider: AiProviderName;
-  providerName: string;
   model: string;
   configured: boolean;
 };
@@ -27,8 +24,6 @@ type Health = {
 
 export function AiProviderSettings() {
   const [config, setConfig] = useState<ProviderConfig>({
-    provider: "groq",
-    providerName: "Groq",
     model: "llama-3.3-70b-versatile",
     configured: false,
   });
@@ -54,12 +49,11 @@ export function AiProviderSettings() {
       const data = await response.json();
       if (!response.ok)
         throw new Error(
-          data.error || "The configured provider is unavailable.",
+          data.error ||
+            "Groq request failed. Please verify your API key and model.",
         );
       setConfig((current) => ({
         ...current,
-        provider: data.provider,
-        providerName: data.providerName || data.provider,
         model: data.model,
         configured: true,
       }));
@@ -74,19 +68,19 @@ export function AiProviderSettings() {
         detail:
           error instanceof Error
             ? error.message
-            : "The provider health check failed.",
+            : "Groq request failed. Please verify your API key and model.",
       });
     }
   };
 
   const statusLabel =
     health.status === "connected"
-      ? `${config.providerName} Connected`
+      ? "Connected"
       : health.status === "testing"
         ? "Testing"
         : config.configured
           ? "Configured"
-          : "API key missing";
+          : "Missing API Key";
   return (
     <section
       className="mt-6 animate-rise animation-delay-3 rounded-xl border border-border bg-card/55 p-6"
@@ -96,18 +90,18 @@ export function AiProviderSettings() {
         <div>
           <p className="flex items-center gap-2 text-sm font-medium">
             <Sparkles className="size-4 text-primary" />
-            AI provider
+            Groq AI Engine
           </p>
           <h2
             id="ai-provider-title"
             className="mt-3 text-xl font-semibold tracking-tight"
           >
-            One interface, provider-ready.
+            A focused intelligence layer for your founder workspace.
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
             Logfound routes every agent request through one server-side AI
-            client. Groq is active now; switching to OpenAI later only changes
-            the provider configuration.
+            Logfound routes every agent request through the secure server-side
+            Groq client. Your API key never reaches the browser.
           </p>
         </div>
         <Button
@@ -129,10 +123,10 @@ export function AiProviderSettings() {
         </Button>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-4">
-        <ProviderMetric label="Current provider" value={config.providerName} />
-        <ProviderMetric label="Model name" value={config.model} />
+        <ProviderMetric label="Current Provider" value="Groq" />
+        <ProviderMetric label="Model" value={config.model} />
         <ProviderMetric
-          label="Connection status"
+          label="Status"
           value={statusLabel}
           tone={
             health.status === "connected"
@@ -149,7 +143,9 @@ export function AiProviderSettings() {
               ? `Healthy · ${health.latencyMs} ms`
               : health.status === "unavailable"
                 ? "Unavailable"
-                : "Not tested"
+                : !config.configured
+                  ? "Missing API Key"
+                  : "Not tested"
           }
           tone={
             health.status === "connected"

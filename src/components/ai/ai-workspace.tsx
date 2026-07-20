@@ -20,7 +20,6 @@ import type {
   AgentContribution,
   AiOperation,
   AiPhase,
-  AiProviderName,
   AiStreamEvent,
 } from "@/lib/ai/types";
 
@@ -87,13 +86,11 @@ export function AiWorkspace() {
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<AiProviderName>("groq");
   const [model, setModel] = useState("llama-3.3-70b-versatile");
   const [health, setHealth] = useState<{
     status: string;
     detail: string;
     latency?: number;
-    provider?: string;
     model?: string;
   } | null>(null);
   const activeStep = phase ? phaseStep[phase] : 0;
@@ -141,7 +138,6 @@ export function AiWorkspace() {
           if (!payload) continue;
           const event = JSON.parse(payload) as AiStreamEvent;
           if (event.type === "meta") {
-            setProvider(event.provider);
             setModel(event.model);
           }
           if (event.type === "status") {
@@ -175,19 +171,19 @@ export function AiWorkspace() {
       const response = await fetch("/api/ai/health", { cache: "no-store" });
       const data = await response.json();
       if (response.ok) {
-        setProvider(data.provider);
         setModel(data.model);
         setHealth({
           status: "connected",
           detail: `${data.providerName || data.provider} · ${data.model} responded: ${data.output || "OK"}`,
           latency: data.latencyMs,
-          provider: data.providerName || data.provider,
           model: data.model,
         });
       } else
         setHealth({
           status: "unavailable",
-          detail: data.error || "The configured AI provider is not available.",
+          detail:
+            data.error ||
+            "Groq request failed. Please verify your API key and model.",
         });
     } catch {
       setHealth({
@@ -441,19 +437,15 @@ export function AiWorkspace() {
           </section>
           <section className="rounded-xl border border-border bg-card/55 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              Active provider
+              Groq AI Engine
             </p>
             <p className="mt-2 flex items-center gap-2 text-lg font-semibold">
               <Cpu className="size-4 text-primary" />
-              {provider === "groq" ? "Groq" : "OpenAI"}
+              Groq
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{model}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Server-controlled through{" "}
-              <code className="rounded bg-secondary px-1.5 py-0.5 text-xs">
-                AI_PROVIDER
-              </code>
-              .
+              Server-controlled through the secure Groq API route.
             </p>
           </section>
         </aside>
