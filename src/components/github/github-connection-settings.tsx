@@ -31,6 +31,31 @@ const emptyStatus: GithubConnectionStatus = {
 type Notice = { tone: "success" | "error"; message: string } | null;
 type RepositoriesResponse = { repositories: GithubRepository[] };
 
+function callbackMessage(reason: string | null) {
+  switch (reason) {
+    case "github_not_configured":
+      return "OAuth callback failed. Verify GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and NEXTAUTH_URL in Vercel.";
+    case "github_storage_not_configured":
+      return "Database unavailable. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.";
+    case "github_migration_missing":
+      return "Migration not applied. Apply 20260718_github_connections.sql and 20260720_demo_auth_users.sql in Supabase.";
+    case "github_auth_migration_missing":
+      return "Migration not applied. Apply 20260720_demo_auth_users.sql so demo sessions can own GitHub connections.";
+    case "github_storage_permission_denied":
+      return "Database permission denied. Verify the Supabase service-role key in Vercel.";
+    case "github_storage_unavailable":
+      return "Database unavailable. Verify Supabase configuration and the GitHub migrations.";
+    case "github_connection_invalid":
+      return "Missing GitHub token. Reconnect GitHub to issue a fresh token.";
+    case "invalid_oauth_state":
+      return "OAuth callback failed. The security cookie expired or was not returned; start GitHub authorization again.";
+    case "github_authorization_declined":
+      return "GitHub authorization was cancelled. No connection was created.";
+    default:
+      return "OAuth callback failed. Check the server logs and GitHub OAuth callback URL, then try again.";
+  }
+}
+
 function messageFrom(response: unknown, fallback: string) {
   if (typeof response === "object" && response && "error" in response) {
     const error = response.error;
@@ -100,13 +125,7 @@ export function GithubConnectionSettings() {
             message:
               "GitHub is connected securely. Choose the repositories that belong in this project.",
           }
-        : {
-            tone: "error",
-            message:
-              reason === "github_authorization_declined"
-                ? "GitHub authorization was cancelled. No connection was created."
-                : "GitHub could not be connected. Please try again.",
-          },
+        : { tone: "error", message: callbackMessage(reason) },
     );
     window.history.replaceState({}, "", window.location.pathname);
     void loadStatus();

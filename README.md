@@ -104,14 +104,14 @@ Copy-Item .env.example .env.local
 
 Set the values described in [Environment Variables](#environment-variables). The UI can run without configuration; live AI requires `GROQ_API_KEY`.
 
-### 3. Configure Supabase (optional for the current prototype)
+### 3. Configure Supabase storage
 
 1. Create a project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Copy the project URL and publishable/anon key into `.env.local`.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for browser authentication. The server also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` as deployment aliases.
-4. Configure Supabase Auth providers and redirect URLs when adding an application sign-in flow.
+2. Copy the project URL into `SUPABASE_URL` and the service-role key into `SUPABASE_SERVICE_ROLE_KEY`. These values are server-only.
+3. Generate `GITHUB_TOKEN_ENCRYPTION_KEY` with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+4. Apply every migration in `supabase/migrations`, including `20260718_github_connections.sql`, `20260720_demo_auth_users.sql`, and `20260721_github_storage_hardening.sql`.
 
-The repository exposes typed browser/server Supabase clients for persistence. Apply the GitHub migrations, including `20260720_demo_auth_users.sql`, before enabling repository storage. They create encrypted-token storage, stable workspace-user identities, and project-repository links with Row Level Security enabled and no browser-role table access.
+The repository exposes typed browser/server Supabase clients for persistence. GitHub storage requires the migrations above: they create encrypted-token storage, stable workspace-user identities, and project-repository links with Row Level Security enabled and no browser-role table access. If a migration is missing, the Settings surface reports the exact migration to apply.
 
 ### 4. Configure demo authentication
 
@@ -132,10 +132,10 @@ Create a free Groq key in the [Groq Console](https://console.groq.com/keys), the
 
 ### 6. Configure GitHub OAuth
 
-1. Apply [`supabase/migrations/20260718_github_connections.sql`](supabase/migrations/20260718_github_connections.sql) to your Supabase project. For a Supabase CLI workflow, run `supabase db push` after linking the project.
+1. Apply every migration in [`supabase/migrations`](supabase/migrations), including [`20260721_github_storage_hardening.sql`](supabase/migrations/20260721_github_storage_hardening.sql). For a Supabase CLI workflow, run `supabase db push` after linking the project.
 2. Create an OAuth App in GitHub’s developer settings.
-3. Set its **Authorization callback URL** to `http://localhost:3000/api/github/oauth/callback` for local development, or `https://your-domain.com/api/github/oauth/callback` in production.
-4. Add the GitHub client ID and client secret to `.env.local`, along with the server-only Supabase service role key and a base64-encoded 32-byte encryption key.
+3. Set its **Authorization callback URL** to `http://localhost:3000/api/github/oauth/callback` for local development, or `${NEXTAUTH_URL}/api/github/oauth/callback` in production.
+4. Add the GitHub client ID and client secret to `.env.local`, along with `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and the base64-encoded encryption key.
 5. Sign in at `/login`, open **Settings**, and select **Connect GitHub**. The OAuth flow uses the same stable authenticated workspace identity as the demo session.
 
 The connection requests `read:user` and `repo` scopes so it can read repositories a founder is permitted to access. GitHub OAuth Apps do not offer a read-only scope for private repositories; Logfound’s service layer makes read-only GitHub requests and never exposes the access token to the browser.
@@ -165,9 +165,9 @@ Copy `.env.example` to `.env.local`. These are the only environment variables cu
 | `SUPABASE_URL`                  | Optional alias            | Server-side alias for the Supabase project URL. `NEXT_PUBLIC_SUPABASE_URL` remains the browser-compatible convention.                                                                          |
 | `SUPABASE_ANON_KEY`             | Optional alias            | Server-side alias for the Supabase publishable/anon key.                                                                                                                                       |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Required for GitHub OAuth | Server-only Supabase key used to access the locked-down GitHub connection tables. Never expose or prefix it with `NEXT_PUBLIC_`.                                                               |
-| `NEXT_PUBLIC_APP_URL`           | Required for GitHub OAuth | Absolute public Logfound origin, for example `http://localhost:3000`. It is used to construct the exact GitHub OAuth callback URL.                                                             |
+| `SUPABASE_URL`                  | Required for GitHub OAuth | Supabase project URL used by the server-side storage client.                                                                                                                                   |
 | `NEXTAUTH_SECRET`               | Required in production    | Secret used to sign the Logfound demo session JWT. Generate a long random value and keep it server-only.                                                                                       |
-| `NEXTAUTH_URL`                  | Optional                  | Canonical application URL retained for NextAuth-compatible deployments; use `http://localhost:3000` locally.                                                                                   |
+| `NEXTAUTH_URL`                  | Required for GitHub OAuth | Canonical application URL used for the OAuth callback and production session configuration; use `http://localhost:3000` locally.                                                               |
 | `LOGFOUND_DEMO_USERNAME`        | Optional                  | Username accepted by the demo Credentials flow; defaults to `founder` in development.                                                                                                          |
 | `LOGFOUND_DEMO_PASSWORD`        | Development only          | Plaintext demo password; defaults to `logfound-demo` locally. Prefer `LOGFOUND_DEMO_PASSWORD_HASH` in production.                                                                              |
 | `LOGFOUND_DEMO_PASSWORD_HASH`   | Production preferred      | Bcrypt hash for the demo password. Takes precedence over `LOGFOUND_DEMO_PASSWORD`.                                                                                                             |
@@ -206,7 +206,7 @@ Supabase SSR clients live in `src/lib/supabase` for browser, server, and middlew
 
 ### GitHub Integration
 
-`src/lib/github` centralizes GitHub OAuth, token encryption, API access, storage, and error handling. The OAuth flow validates a cryptographically random state in an HTTP-only cookie, exchanges authorization codes only on the server, validates the GitHub identity, and encrypts the access token with AES-256-GCM before writing it through the Supabase service role. Client components only call internal `/api/github` endpoints and receive safe repository metadata and activity data. A revoked or expired token is marked for reauthorization and surfaces a reconnect action instead of leaking a provider error.
+`src/lib/github` centralizes GitHub OAuth, token encryption, API access, storage, and error handling. The OAuth flow validates a cryptographically random state in an HTTP-only cookie, exchanges authorization codes only on the server, validates the GitHub identity, and encrypts the access token with AES-256-GCM before writing it through the Supabase service role. The callback URL is derived from `NEXTAUTH_URL` (or `NEXT_PUBLIC_APP_URL`/`VERCEL_URL`), so local and Vercel deployments share one configuration contract. Client components only call internal `/api/github` endpoints and receive safe repository metadata and activity data. A revoked or expired token is marked for reauthorization and surfaces a reconnect action instead of leaking a provider error.
 
 The integration fetches repositories for the authenticated GitHub account and, for selected project repositories, reads repository metadata, commits, pull requests, issues, branches, and contributors. Webhook ingestion and background synchronization remain future work.
 
