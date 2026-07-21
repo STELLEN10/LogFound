@@ -39,9 +39,9 @@ function callbackMessage(reason: string | null) {
     case "github_storage_not_configured":
       return "Database unavailable. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.";
     case "github_migration_missing":
-      return "Migration not applied. Apply 20260718_github_connections.sql and 20260720_demo_auth_users.sql in Supabase.";
+      return "Migration not applied. Apply 20260718_github_connections.sql, 20260720_demo_auth_users.sql, and 20260721_github_storage_hardening.sql in Supabase.";
     case "github_auth_migration_missing":
-      return "Migration not applied. Apply 20260720_demo_auth_users.sql so demo sessions can own GitHub connections.";
+      return "Migration not applied. Apply 20260720_demo_auth_users.sql and 20260721_github_storage_hardening.sql so demo sessions can own GitHub connections.";
     case "github_storage_permission_denied":
       return "Database permission denied. Verify the Supabase service-role key in Vercel.";
     case "github_storage_auth_failed":
