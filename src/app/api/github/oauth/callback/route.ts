@@ -7,7 +7,7 @@ import {
   GITHUB_OAUTH_STATE_COOKIE,
   validOAuthState,
 } from "@/lib/github/oauth";
-import { saveGithubConnection } from "@/lib/github/store";
+import { checkGithubStorage, saveGithubConnection } from "@/lib/github/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,10 +45,16 @@ export async function GET(request: NextRequest) {
     return settingsRedirect(request, "error", "invalid_oauth_state");
   }
 
+  let operation = "validating the workspace session";
   try {
     const { user } = await requireWorkspaceSession();
+    operation = "exchanging the GitHub authorization code";
     const token = await exchangeGithubCode(code);
+    operation = "loading the authenticated GitHub user";
     const viewer = await getGithubViewer(token.accessToken);
+    operation = "checking GitHub storage tables";
+    await checkGithubStorage();
+    operation = "saving the GitHub connection";
     await saveGithubConnection(
       user.id,
       viewer,
@@ -59,11 +65,16 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const code =
       error instanceof GithubIntegrationError
-        ? error.code
+        ? error.code === "github_storage_unavailable" && operation === "saving the GitHub connection"
+          ? "github_storage_save_failed"
+          : error.code
         : "github_oauth_failed";
     console.error("[github] OAuth callback failed", {
+      operation,
       code,
       message: error instanceof Error ? error.message : "unknown_error",
+      stack: error instanceof Error ? error.stack : undefined,
+      details: typeof error === "object" && error && "details" in error ? error.details : undefined,
     });
     return settingsRedirect(request, "error", code);
   }
