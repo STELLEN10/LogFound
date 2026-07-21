@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AuthUser } from "./session";
+import { isUuid, userIdForUsername, type AuthUser } from "./session";
 
 type SupabaseError = {
   code?: string;
@@ -58,12 +58,24 @@ function toAuthUser(row: WorkspaceUserRow, fallback: AuthUser): AuthUser {
 }
 
 export async function ensureWorkspaceUser(user: AuthUser, options: { required?: boolean } = {}): Promise<AuthUser> {
+  // Demo sessions created by older builds may contain a username or a
+  // provider subject in `id`. Never send that arbitrary value to a UUID
+  // column; derive the stable demo identity instead.
+  const normalizedUser = isUuid(user.id)
+    ? user
+    : { ...user, id: await userIdForUsername(user.username) };
+  if (normalizedUser.id !== user.id) {
+    console.warn("[auth] normalized a non-UUID workspace subject before Supabase write", {
+      operation: "upsert logfound_users",
+      source: "username-derived UUID",
+    });
+  }
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("logfound_users")
       .upsert(
-        { id: user.id, username: user.username, display_name: user.name },
+        { id: normalizedUser.id, username: normalizedUser.username, display_name: normalizedUser.name },
         { onConflict: "id" },
       )
       .select("id,username,display_name")
@@ -77,24 +89,24 @@ export async function ensureWorkspaceUser(user: AuthUser, options: { required?: 
           .select("id,username,display_name")
           .eq("username", user.username)
           .maybeSingle();
-        if (!lookupError && existing) return toAuthUser(existing as WorkspaceUserRow, user);
+        if (!lookupError && existing) return toAuthUser(existing as WorkspaceUserRow, normalizedUser);
         if (lookupError) {
           const failure = storageFailure("loading an existing workspace user", lookupError);
           if (options.required) throw failure;
-          return user;
+          return normalizedUser;
         }
       }
       const failure = storageFailure("upserting logfound_users", error);
       if (options.required) throw failure;
-      return user;
+      return normalizedUser;
     }
-    if (data) return toAuthUser(data as WorkspaceUserRow, user);
+    if (data) return toAuthUser(data as WorkspaceUserRow, normalizedUser);
     const failure = storageFailure("reading the upserted workspace user", new Error("Supabase returned no workspace user row."));
     if (options.required) throw failure;
-    return user;
+    return normalizedUser;
   } catch (error) {
     const failure = error instanceof WorkspaceUserStorageError ? error : storageFailure("initializing workspace-user storage", error);
     if (options.required) throw failure;
-    return user;
+    return normalizedUser;
   }
 }

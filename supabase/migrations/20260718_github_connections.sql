@@ -1,6 +1,8 @@
 -- GitHub OAuth credentials are encrypted by the application before insertion.
 -- These tables are intentionally inaccessible to browser clients; only the
 -- server-side Supabase service role can read or write them.
+-- user_id columns reference the UUID workspace identity; GitHub's numeric
+-- account id is stored separately as github_user_id.
 
 create table if not exists public.github_connections (
   id uuid primary key default gen_random_uuid(),
