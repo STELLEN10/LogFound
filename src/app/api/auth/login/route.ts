@@ -14,9 +14,9 @@ export async function POST(request: Request) {
     const input = loginSchema.parse(await request.json());
     const user = await authenticateCredentials(input.username, input.password);
     if (!user) return Response.json({ error: { code: "invalid_credentials", message: "That username or password does not match." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
-    const token = await createSessionToken(user);
-    await ensureWorkspaceUser(user);
-    const response = NextResponse.json({ ok: true, user }, { headers: { "Cache-Control": "no-store" } });
+    const workspaceUser = await ensureWorkspaceUser(user);
+    const token = await createSessionToken(workspaceUser);
+    const response = NextResponse.json({ ok: true, user: workspaceUser }, { headers: { "Cache-Control": "no-store" } });
     response.cookies.set({ name: "logfound_session", value: token, ...sessionCookieOptions() });
     return response;
   } catch (error) {

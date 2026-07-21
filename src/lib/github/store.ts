@@ -150,8 +150,13 @@ export async function getGithubConnection(
 
 export async function checkGithubStorage() {
   const admin = adminClient("checking GitHub storage tables");
-  for (const table of ["logfound_users", "github_connections", "github_project_repositories"]) {
-    const { error } = await admin.from(table).select("id").limit(0);
+  const requiredSchema = [
+    ["logfound_users", "id,username,display_name"],
+    ["github_connections", "id,user_id,encrypted_access_token,scopes,reauth_required"],
+    ["github_project_repositories", "id,user_id,connection_id,project_key,repository_id"],
+  ] as const;
+  for (const [table, columns] of requiredSchema) {
+    const { error } = await admin.from(table).select(columns).limit(0);
     if (error) throw storageError(error, `checking the ${table} table`);
   }
 }
