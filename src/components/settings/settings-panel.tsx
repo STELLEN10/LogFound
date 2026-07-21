@@ -19,6 +19,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { LogfoundLogo } from "@/components/brand/logfound-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCurrentTime } from "@/hooks/use-current-time";
 
 const themes = [
   { id: "midnight", name: "Midnight", swatch: "bg-cyan-300" },
@@ -68,6 +69,7 @@ const sections = [
 
 export function SettingsPanel() {
   const { theme, setTheme } = useTheme();
+  const { sessionStartedAt, relative } = useCurrentTime();
   const [demo, setDemo] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -98,7 +100,7 @@ export function SettingsPanel() {
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-border bg-card/55 px-2 py-1">
             <span className="px-1 text-xs text-muted-foreground">
-              Workspace session
+              Workspace session · {sessionStartedAt ? relative(sessionStartedAt) : "starting"}
             </span>
             <LogoutButton />
           </div>

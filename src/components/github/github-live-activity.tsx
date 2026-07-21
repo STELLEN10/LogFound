@@ -2,6 +2,7 @@
 
 import { AlertTriangle, GitBranch, GitCommitHorizontal, Github, GitPullRequest, GitPullRequestClosed, LoaderCircle, Users } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import type { GithubConnectionStatus, GithubRepositoryActivity } from "@/lib/github/types";
 
 type State = { kind: "loading" } | { kind: "disconnected" } | { kind: "error"; message: string } | { kind: "ready"; activity: GithubRepositoryActivity };
@@ -18,12 +19,8 @@ async function request<T>(url: string) {
   return payload as T;
 }
 
-function shortDate(value: string | null) {
-  if (!value) return "No recent push";
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(value));
-}
-
 export function GithubLiveActivity() {
+  const { relative } = useCurrentTime();
   const [state, setState] = useState<State>({ kind: "loading" });
 
   useEffect(() => {
@@ -56,8 +53,8 @@ export function GithubLiveActivity() {
   return <section className="mt-8 animate-rise rounded-xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card p-6" aria-labelledby="live-github-title">
     <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Live repository context</p><h2 id="live-github-title" className="mt-2 text-2xl font-semibold tracking-tight">{activity.repository.fullName}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{activity.repository.description || "GitHub activity is now connected to this founder workspace."}</p></div><a href={activity.repository.htmlUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline"><Github className="size-4" />Open repository</a></div>
     <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><LiveMetric Icon={GitCommitHorizontal} value={String(activity.commits.length)} label="recent commits" /><LiveMetric Icon={GitPullRequest} value={String(activity.pullRequests.length)} label="pull requests" /><LiveMetric Icon={GitPullRequestClosed} value={String(activity.issues.length)} label="issues" /><LiveMetric Icon={GitBranch} value={String(activity.branches.length)} label="branches" /><LiveMetric Icon={Users} value={String(activity.contributors.length)} label="contributors" /></div>
-    <div className="mt-6 grid gap-5 lg:grid-cols-2"><LiveList title="Recent commits" items={activity.commits.slice(0, 5).map((commit) => ({ title: commit.message.split("\n")[0], meta: `${commit.sha.slice(0, 7)} · ${commit.authorName || "Unknown author"}`, href: commit.htmlUrl }))} empty="No commits were returned by GitHub." /><LiveList title="Pull requests and issues" items={[...activity.pullRequests.slice(0, 3).map((item) => ({ title: `#${item.number} ${item.title}`, meta: `${item.state} pull request · ${shortDate(item.updatedAt)}`, href: item.htmlUrl })), ...activity.issues.slice(0, 3).map((item) => ({ title: `#${item.number} ${item.title}`, meta: `${item.state} issue · ${shortDate(item.updatedAt)}`, href: item.htmlUrl }))]} empty="No recent pull requests or issues were returned." /></div>
-    <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-primary/15 pt-5 text-xs text-muted-foreground"><span>Default branch: <strong className="font-medium text-foreground">{activity.repository.defaultBranch}</strong></span><span>Last pushed: <strong className="font-medium text-foreground">{shortDate(activity.repository.pushedAt)}</strong></span><span>{activity.contributors.slice(0, 4).map((contributor) => contributor.login).join(" · ") || "No contributors returned"}</span></div>
+    <div className="mt-6 grid gap-5 lg:grid-cols-2"><LiveList title="Recent commits" items={activity.commits.slice(0, 5).map((commit) => ({ title: commit.message.split("\n")[0], meta: `${commit.sha.slice(0, 7)} · ${commit.authorName || "Unknown author"} · ${commit.authoredAt ? relative(commit.authoredAt) : "time unavailable"}`, href: commit.htmlUrl }))} empty="No commits were returned by GitHub." /><LiveList title="Pull requests and issues" items={[...activity.pullRequests.slice(0, 3).map((item) => ({ title: `#${item.number} ${item.title}`, meta: `${item.state} pull request · updated ${relative(item.updatedAt)}`, href: item.htmlUrl })), ...activity.issues.slice(0, 3).map((item) => ({ title: `#${item.number} ${item.title}`, meta: `${item.state} issue · updated ${relative(item.updatedAt)}`, href: item.htmlUrl }))]} empty="No recent pull requests or issues were returned." /></div>
+    <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-primary/15 pt-5 text-xs text-muted-foreground"><span>Default branch: <strong className="font-medium text-foreground">{activity.repository.defaultBranch}</strong></span><span>Last pushed: <strong className="font-medium text-foreground">{activity.repository.pushedAt ? relative(activity.repository.pushedAt) : "No recent push"}</strong></span><span>{activity.contributors.slice(0, 4).map((contributor) => contributor.login).join(" · ") || "No contributors returned"}</span></div>
   </section>;
 }
 
