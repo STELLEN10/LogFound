@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { LogfoundLogo } from "@/components/brand/logfound-logo";
 import { ReasoningNetwork } from "@/components/ai/reasoning-network";
 import { cn } from "@/lib/utils";
+import { useCurrentTime } from "@/hooks/use-current-time";
+import { formatTime } from "@/lib/time";
 import type {
   AgentContribution,
   AiOperation,
@@ -76,6 +78,7 @@ const phaseStep: Record<AiPhase, number> = {
 };
 
 export function AiWorkspace() {
+  const { now, sessionStartedAt, relative, timezone } = useCurrentTime();
   const [question, setQuestion] = useState(
     "Should I launch onboarding this week?",
   );
@@ -85,6 +88,7 @@ export function AiWorkspace() {
   const [contributions, setContributions] = useState<AgentContribution[]>([]);
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
+  const [lastAiResponseAt, setLastAiResponseAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState("llama-3.3-70b-versatile");
   const [health, setHealth] = useState<{
@@ -103,6 +107,7 @@ export function AiWorkspace() {
     setPhaseMessage("Understanding the founder request…");
     setContributions([]);
     setOutput("");
+    let receivedText = "";
     try {
       const response = await fetch("/api/ai", {
         method: "POST",
@@ -146,8 +151,10 @@ export function AiWorkspace() {
           }
           if (event.type === "contribution")
             setContributions((existing) => [...existing, event.contribution]);
-          if (event.type === "delta")
+          if (event.type === "delta") {
+            receivedText += event.text;
             setOutput((existing) => existing + event.text);
+          }
           if (event.type === "error") setError(event.message);
         }
       }
@@ -158,6 +165,7 @@ export function AiWorkspace() {
           : "The AI service is temporarily unavailable.",
       );
     } finally {
+      if (receivedText) setLastAiResponseAt(new Date());
       setRunning(false);
       setPhase(null);
     }
@@ -434,6 +442,23 @@ export function AiWorkspace() {
                 )}
               </div>
             )}
+          </section>
+          <section className="rounded-xl border border-border bg-card/55 p-5" aria-label="Live workspace time">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Workspace time</p>
+            <p className="mt-2 font-mono text-2xl font-semibold tracking-tight">
+              {now ? formatTime(now) : "--:--:--"}
+              <span className="ml-2 text-xs font-sans font-normal text-muted-foreground">{timezone}</span>
+            </p>
+            <dl className="mt-5 grid gap-3 border-t border-border pt-4 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Session started</dt>
+                <dd className="font-medium">{sessionStartedAt ? relative(sessionStartedAt) : "Starting now"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Last AI response</dt>
+                <dd className="font-medium">{lastAiResponseAt ? relative(lastAiResponseAt) : "No response yet"}</dd>
+              </div>
+            </dl>
           </section>
           <section className="rounded-xl border border-border bg-card/55 p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">

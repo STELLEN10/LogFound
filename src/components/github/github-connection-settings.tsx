@@ -15,6 +15,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogfoundLogo } from "@/components/brand/logfound-logo";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import type {
   GithubConnectionStatus,
   GithubRepository,
@@ -444,6 +445,7 @@ function RepositoryPicker({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const { relative } = useCurrentTime();
   const filtered = useMemo(() => {
     const term = query.toLowerCase().trim();
     return term
@@ -563,11 +565,7 @@ function RepositoryPicker({
                       </span>
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      Updated{" "}
-                      {new Intl.DateTimeFormat(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      }).format(new Date(repository.updatedAt))}
+                      Updated {relative(repository.updatedAt)}
                     </span>
                   </button>
                 );

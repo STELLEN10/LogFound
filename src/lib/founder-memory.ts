@@ -6,13 +6,13 @@ export const currentContext = { project: "Logfound activation", repository: "log
 export const onboardingReplay: Replay = {
   id: "onboarding", title: "Launch the onboarding flow", problem: "New founders reached the workspace without a clear first meaningful action.", decision: "Ship a constrained onboarding flow to ten founders after authentication coverage is complete.", outcome: "First-session clarity improved in early interviews and the release scope stayed protected.", lesson: "The strongest feature decisions started with a customer conversation, then a deliberately narrow first release.",
   events: [
-    { id: "idea", kind: "idea", title: "Activation gap noticed", detail: "Three founders asked what to do first after entering the workspace.", date: "Jun 24", source: "Founder note" },
-    { id: "feedback", kind: "feedback", title: "Customer feedback collected", detail: "Interviews pointed to confidence—not feature breadth—as the missing first-session signal.", date: "Jun 26", source: "Customer interviews" },
-    { id: "prototype", kind: "prototype", title: "Guided start prototyped", detail: "A lightweight first-session narrative was designed around a single focused action.", date: "Jul 02", source: "Product" },
-    { id: "commit", kind: "commit", title: "Dashboard workspace committed", detail: "e1e13f4 established the daily surface that onboarding now enters through.", date: "Jul 12", source: "GitHub" },
-    { id: "launch", kind: "launch", title: "Cohort launch selected", detail: "Ten-founder rollout chosen to protect learning quality before broadening reach.", date: "Jul 15", source: "Decision" },
-    { id: "metric", kind: "metric", title: "First-session signal improved", detail: "Interview participants identified the next action without prompting.", date: "Jul 18", source: "Research" },
-    { id: "lesson", kind: "lesson", title: "Learning recorded", detail: "Activation quality improves when scope stays narrow and testing happens before launch week.", date: "Jul 19", source: "Echo" },
+    { id: "idea", kind: "idea", title: "Activation gap noticed", detail: "Three founders asked what to do first after entering the workspace.", date: "2026-06-24T09:15:00+02:00", source: "Founder note" },
+    { id: "feedback", kind: "feedback", title: "Customer feedback collected", detail: "Interviews pointed to confidence—not feature breadth—as the missing first-session signal.", date: "2026-06-26T14:40:00+02:00", source: "Customer interviews" },
+    { id: "prototype", kind: "prototype", title: "Guided start prototyped", detail: "A lightweight first-session narrative was designed around a single focused action.", date: "2026-07-02T11:20:00+02:00", source: "Product" },
+    { id: "commit", kind: "commit", title: "Dashboard workspace committed", detail: "e1e13f4 established the daily surface that onboarding now enters through.", date: "2026-07-12T16:05:00+02:00", source: "GitHub" },
+    { id: "launch", kind: "launch", title: "Cohort launch selected", detail: "Ten-founder rollout chosen to protect learning quality before broadening reach.", date: "2026-07-15T10:30:00+02:00", source: "Decision" },
+    { id: "metric", kind: "metric", title: "First-session signal improved", detail: "Interview participants identified the next action without prompting.", date: "2026-07-18T15:10:00+02:00", source: "Research" },
+    { id: "lesson", kind: "lesson", title: "Learning recorded", detail: "Activation quality improves when scope stays narrow and testing happens before launch week.", date: "2026-07-19T17:45:00+02:00", source: "Echo" },
   ],
 };
 

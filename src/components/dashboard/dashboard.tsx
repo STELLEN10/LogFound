@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { LiveClock } from "@/components/time/live-clock";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { agentList } from "@/lib/agents/registry";
 import { cn } from "@/lib/utils";
@@ -63,35 +65,35 @@ const activity = [
     Lightbulb,
     "Decision created",
     "Prioritised the onboarding narrative",
-    "45 min ago",
+    45 * 60,
     "text-primary",
   ],
   [
     GitCommitHorizontal,
     "GitHub commit",
     "feat: establish dashboard information architecture",
-    "2 h ago",
+    2 * 60 * 60,
     "text-emerald-300",
   ],
   [
     FileText,
     "Note added",
     "Captured three signals from customer interviews",
-    "Yesterday",
+    24 * 60 * 60,
     "text-violet-300",
   ],
   [
     Milestone,
     "Milestone reached",
     "Foundation shipped and ready to extend",
-    "Mon",
+    2 * 24 * 60 * 60,
     "text-amber-300",
   ],
   [
     Sparkles,
     "AI recommendation",
     "Validate the activation loop before adding more surface area",
-    "Mon",
+    2 * 24 * 60 * 60,
     "text-primary",
   ],
 ] as const;
@@ -102,6 +104,7 @@ const conversations = [
 ];
 
 export function Dashboard({ username = "there" }: { username?: string }) {
+  const { now, relative } = useCurrentTime();
   const [notice, setNotice] = useState(
     "Your workspace is clear. One focused move will create momentum today.",
   );
@@ -134,9 +137,12 @@ export function Dashboard({ username = "there" }: { username?: string }) {
       <section className="animate-rise" aria-labelledby="welcome-title">
         <div className="flex flex-col gap-7 border-b border-border/70 pb-10 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-              Tuesday · July 15
-            </p>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                Live workspace clock
+              </p>
+              <LiveClock compact />
+            </div>
             <h1
               id="welcome-title"
               className="text-4xl font-semibold tracking-[-0.035em] sm:text-5xl"
@@ -186,13 +192,13 @@ export function Dashboard({ username = "there" }: { username?: string }) {
               }
             />
             <div className="mt-5 rounded-xl border border-border bg-card/55 px-5 py-2 sm:px-7">
-              {activity.map(([Icon, title, detail, time, tone], index) => (
+              {activity.map(([Icon, title, detail, secondsAgo, tone], index) => (
                 <Activity
                   key={title}
                   Icon={Icon}
                   title={title}
                   detail={detail}
-                  time={time}
+                  time={now ? relative(new Date(now.getTime() - secondsAgo * 1000)) : "Loading time"}
                   tone={tone}
                   last={index === activity.length - 1}
                 />
