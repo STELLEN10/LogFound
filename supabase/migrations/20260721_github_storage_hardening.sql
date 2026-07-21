@@ -1,5 +1,7 @@
 -- Idempotent GitHub storage bootstrap for demo sessions and Vercel deployments.
 -- Run this after 20260718_github_connections.sql and 20260720_demo_auth_users.sql.
+-- Workspace identity columns are UUIDs. GitHub's numeric identity is kept
+-- separately in github_connections.github_user_id and is never used as a UUID.
 
 create table if not exists public.logfound_users (
   id uuid primary key,

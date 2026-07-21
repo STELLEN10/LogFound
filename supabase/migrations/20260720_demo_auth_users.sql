@@ -1,4 +1,5 @@
--- Demo username/password sessions use stable workspace identities rather than Supabase email identities.
+-- Demo username/password sessions use stable UUID workspace identities rather than Supabase email identities.
+-- GitHub provider identifiers must never be written to logfound_users.id.
 create table if not exists public.logfound_users (
   id uuid primary key,
   username text not null unique,
