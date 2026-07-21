@@ -70,6 +70,14 @@ export async function ensureWorkspaceUser(user: AuthUser, options: { required?: 
       source: "username-derived UUID",
     });
   }
+  if (!isUuid(normalizedUser.id)) {
+    const failure = storageFailure(
+      "validating the workspace UUID",
+      new Error("The workspace identity generator returned a non-UUID value."),
+    );
+    if (options.required) throw failure;
+    return normalizedUser;
+  }
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
