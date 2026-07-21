@@ -43,6 +43,7 @@ type GithubProjectRepositoryRow = {
 function storageError(
   error: {
     code?: string;
+    status?: number;
     message?: string;
     details?: string;
     hint?: string;
@@ -50,17 +51,25 @@ function storageError(
   operation = "GitHub connection storage",
 ) {
   const code = error?.code;
+  const providerMessage = error?.message;
   console.error("[github] storage failed", {
     operation,
     code,
-    message: error?.message,
+    status: error?.status,
+    message: providerMessage,
     details: error?.details,
     hint: error?.hint,
   });
-  if (code === "42P01" || code === "PGRST205")
+  if (code === "42P01" || code === "PGRST205" || code === "PGRST204" || code === "42703")
     return new GithubIntegrationError(
       "github_migration_missing",
-      "GitHub database migration is missing. Apply 20260718_github_connections.sql and 20260720_demo_auth_users.sql, then retry.",
+      `Database schema is incomplete while ${operation.toLowerCase()}. Apply 20260718_github_connections.sql, 20260720_demo_auth_users.sql, and 20260721_github_storage_hardening.sql, then retry.`,
+      503,
+    );
+  if (code === "401" || code === "403" || code === "PGRST301")
+    return new GithubIntegrationError(
+      "github_storage_auth_failed",
+      `Supabase rejected the server storage credentials while ${operation.toLowerCase()}. Verify SUPABASE_SERVICE_ROLE_KEY belongs to the configured Supabase project.`,
       503,
     );
   if (code === "42501")
@@ -77,12 +86,12 @@ function storageError(
     );
   return new GithubIntegrationError(
     "github_storage_unavailable",
-    `Database unavailable while ${operation.toLowerCase()}. Verify Supabase URL, service role key, and GitHub migrations.`,
+    `Database unavailable while ${operation.toLowerCase()}${code ? ` (Supabase ${code})` : ""}. Verify SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and the GitHub migrations.`,
     503,
   );
 }
 
-function adminClient() {
+function adminClient(operation = "initializing the Supabase server client") {
   try {
     return createAdminClient();
   } catch (error) {
@@ -90,9 +99,13 @@ function adminClient() {
       error instanceof Error
         ? error.message
         : "Supabase server configuration is missing.";
+    console.error("[github] storage client initialization failed", {
+      operation,
+      message,
+    });
     throw new GithubIntegrationError(
       "github_storage_not_configured",
-      `Database unavailable. ${message} Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the server environment.`,
+      `Database unavailable while ${operation.toLowerCase()}. ${message} Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the server environment.`,
       503,
     );
   }
@@ -124,15 +137,23 @@ function toConnectedRepository(
 export async function getGithubConnection(
   userId: string,
 ): Promise<GithubConnectionRow | null> {
-  const { data, error } = await adminClient()
+  const { data, error } = await adminClient("loading the GitHub connection")
     .from("github_connections")
     .select(
       "id,user_id,github_user_id,github_login,avatar_url,encrypted_access_token,scopes,reauth_required,connected_at",
     )
     .eq("user_id", userId)
     .maybeSingle();
-  if (error) throw storageError(error);
+  if (error) throw storageError(error, "loading the GitHub connection");
   return data as GithubConnectionRow | null;
+}
+
+export async function checkGithubStorage() {
+  const admin = adminClient("checking GitHub storage tables");
+  for (const table of ["logfound_users", "github_connections", "github_project_repositories"]) {
+    const { error } = await admin.from(table).select("id").limit(0);
+    if (error) throw storageError(error, `checking the ${table} table`);
+  }
 }
 
 export async function saveGithubConnection(
@@ -141,7 +162,7 @@ export async function saveGithubConnection(
   accessToken: string,
   scopes: string[],
 ) {
-  const { data, error } = await adminClient()
+  const { data, error } = await adminClient("saving the GitHub connection")
     .from("github_connections")
     .upsert(
       {
@@ -161,7 +182,7 @@ export async function saveGithubConnection(
       "id,user_id,github_user_id,github_login,avatar_url,encrypted_access_token,scopes,reauth_required,connected_at",
     )
     .single();
-  if (error || !data) throw storageError(error);
+  if (error || !data) throw storageError(error, "saving the GitHub connection");
   return data as GithubConnectionRow;
 }
 
@@ -183,7 +204,7 @@ export async function getGithubAccessToken(userId: string) {
 }
 
 export async function markGithubConnectionForReauth(userId: string) {
-  const { error } = await adminClient()
+  const { error } = await adminClient("marking the GitHub connection for reauthorization")
     .from("github_connections")
     .update({ reauth_required: true, updated_at: new Date().toISOString() })
     .eq("user_id", userId);
@@ -194,18 +215,18 @@ export async function markGithubConnectionForReauth(userId: string) {
 }
 
 export async function removeGithubConnection(userId: string) {
-  const { error } = await adminClient()
+  const { error } = await adminClient("removing the GitHub connection")
     .from("github_connections")
     .delete()
     .eq("user_id", userId);
-  if (error) throw storageError(error);
+  if (error) throw storageError(error, "removing the GitHub connection");
 }
 
 export async function listConnectedGithubRepositories(
   userId: string,
   projectKey?: string,
 ) {
-  let query = adminClient()
+  let query = adminClient("loading connected repositories")
     .from("github_project_repositories")
     .select(
       "project_key,repository_id,repository_name,repository_full_name,repository_owner,description,is_private,visibility,primary_language,default_branch,updated_at_github,pushed_at_github,html_url,stars_count,avatar_url,connected_at",
@@ -214,7 +235,7 @@ export async function listConnectedGithubRepositories(
     .order("updated_at_github", { ascending: false });
   if (projectKey) query = query.eq("project_key", projectKey);
   const { data, error } = await query;
-  if (error) throw storageError(error);
+  if (error) throw storageError(error, "loading connected repositories");
   return ((data || []) as GithubProjectRepositoryRow[]).map(
     toConnectedRepository,
   );
@@ -223,6 +244,7 @@ export async function listConnectedGithubRepositories(
 export async function githubConnectionStatus(
   userId: string,
 ): Promise<GithubConnectionStatus> {
+  await checkGithubStorage();
   const connection = await getGithubConnection(userId);
   if (!connection) return { connected: false, repositories: [] };
   const repositories = await listConnectedGithubRepositories(userId);
@@ -261,7 +283,7 @@ export async function replaceProjectRepositories(
       404,
     );
   const safeProjectKey = validProjectKey(projectKey);
-  const admin = adminClient();
+  const admin = adminClient("saving project repositories");
 
   if (repositories.length === 0) {
     const { error } = await admin
@@ -269,7 +291,7 @@ export async function replaceProjectRepositories(
       .delete()
       .eq("user_id", userId)
       .eq("project_key", safeProjectKey);
-    if (error) throw storageError(error);
+    if (error) throw storageError(error, "removing project repositories");
     return [];
   }
 
@@ -297,7 +319,7 @@ export async function replaceProjectRepositories(
   const { error: upsertError } = await admin
     .from("github_project_repositories")
     .upsert(rows, { onConflict: "user_id,project_key,repository_id" });
-  if (upsertError) throw storageError(upsertError);
+  if (upsertError) throw storageError(upsertError, "saving project repositories");
 
   const selectedIds = repositories.map((repository) => repository.id).join(",");
   const { error: removeError } = await admin
@@ -306,7 +328,7 @@ export async function replaceProjectRepositories(
     .eq("user_id", userId)
     .eq("project_key", safeProjectKey)
     .not("repository_id", "in", `(${selectedIds})`);
-  if (removeError) throw storageError(removeError);
+  if (removeError) throw storageError(removeError, "removing unselected project repositories");
   return listConnectedGithubRepositories(userId, safeProjectKey);
 }
 
@@ -314,13 +336,13 @@ export async function assertGithubRepositoryConnected(
   userId: string,
   fullName: string,
 ) {
-  const { data, error } = await adminClient()
+  const { data, error } = await adminClient("checking the connected repository")
     .from("github_project_repositories")
     .select("repository_id")
     .eq("user_id", userId)
     .eq("repository_full_name", fullName)
     .maybeSingle();
-  if (error) throw storageError(error);
+  if (error) throw storageError(error, "checking the connected repository");
   if (!data)
     throw new GithubIntegrationError(
       "repository_not_connected",

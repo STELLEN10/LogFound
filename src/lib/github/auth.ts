@@ -11,6 +11,15 @@ export async function requireWorkspaceSession(): Promise<WorkspaceSession> {
   if (!session) {
     throw new GithubIntegrationError("sign_in_required", "Sign in to Logfound before connecting GitHub.", 401);
   }
-  await ensureWorkspaceUser(session.user);
+  try {
+    await ensureWorkspaceUser(session.user, { required: true });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Supabase workspace-user synchronization failed.";
+    throw new GithubIntegrationError(
+      "github_storage_unavailable",
+      `Database unavailable while preparing the workspace user. ${detail}`,
+      503,
+    );
+  }
   return session;
 }

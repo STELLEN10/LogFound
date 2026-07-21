@@ -44,6 +44,12 @@ function callbackMessage(reason: string | null) {
       return "Migration not applied. Apply 20260720_demo_auth_users.sql so demo sessions can own GitHub connections.";
     case "github_storage_permission_denied":
       return "Database permission denied. Verify the Supabase service-role key in Vercel.";
+    case "github_storage_auth_failed":
+      return "Supabase rejected the server storage credentials. Verify SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY belong to the same project in Vercel.";
+    case "github_storage_save_failed":
+      return "Database unavailable while saving the GitHub connection. Check the Vercel Supabase credentials and confirm the GitHub migrations are applied.";
+    case "github_storage_not_configured":
+      return "Database configuration is incomplete. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to the Vercel server environment.";
     case "github_storage_unavailable":
       return "Database unavailable. Verify Supabase configuration and the GitHub migrations.";
     case "github_connection_invalid":
