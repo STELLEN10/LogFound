@@ -1,4 +1,5 @@
 import "server-only";
+import { isUuid } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decryptGithubToken, encryptGithubToken } from "./crypto";
 import { GithubIntegrationError } from "./errors";
@@ -111,6 +112,19 @@ function adminClient(operation = "initializing the Supabase server client") {
   }
 }
 
+function assertWorkspaceUserId(userId: string, operation: string) {
+  if (isUuid(userId)) return;
+  console.error("[github] refusing a non-UUID workspace identity", {
+    operation,
+    userIdType: typeof userId,
+  });
+  throw new GithubIntegrationError(
+    "invalid_workspace_identity",
+    "The workspace identity is invalid. Sign in again to create a valid workspace session.",
+    401,
+  );
+}
+
 function toConnectedRepository(
   row: GithubProjectRepositoryRow,
 ): GithubConnectedRepository {
@@ -137,6 +151,7 @@ function toConnectedRepository(
 export async function getGithubConnection(
   userId: string,
 ): Promise<GithubConnectionRow | null> {
+  assertWorkspaceUserId(userId, "loading the GitHub connection");
   const { data, error } = await adminClient("loading the GitHub connection")
     .from("github_connections")
     .select(
@@ -167,6 +182,7 @@ export async function saveGithubConnection(
   accessToken: string,
   scopes: string[],
 ) {
+  assertWorkspaceUserId(userId, "saving the GitHub connection");
   const { data, error } = await adminClient("saving the GitHub connection")
     .from("github_connections")
     .upsert(
@@ -192,6 +208,7 @@ export async function saveGithubConnection(
 }
 
 export async function getGithubAccessToken(userId: string) {
+  assertWorkspaceUserId(userId, "loading the GitHub access token");
   const connection = await getGithubConnection(userId);
   if (!connection)
     throw new GithubIntegrationError(
@@ -209,6 +226,7 @@ export async function getGithubAccessToken(userId: string) {
 }
 
 export async function markGithubConnectionForReauth(userId: string) {
+  assertWorkspaceUserId(userId, "marking the GitHub connection for reauthorization");
   const { error } = await adminClient("marking the GitHub connection for reauthorization")
     .from("github_connections")
     .update({ reauth_required: true, updated_at: new Date().toISOString() })
@@ -220,6 +238,7 @@ export async function markGithubConnectionForReauth(userId: string) {
 }
 
 export async function removeGithubConnection(userId: string) {
+  assertWorkspaceUserId(userId, "removing the GitHub connection");
   const { error } = await adminClient("removing the GitHub connection")
     .from("github_connections")
     .delete()
@@ -231,6 +250,7 @@ export async function listConnectedGithubRepositories(
   userId: string,
   projectKey?: string,
 ) {
+  assertWorkspaceUserId(userId, "loading connected repositories");
   let query = adminClient("loading connected repositories")
     .from("github_project_repositories")
     .select(
@@ -280,6 +300,7 @@ export async function replaceProjectRepositories(
   projectKey: string,
   repositories: GithubRepository[],
 ) {
+  assertWorkspaceUserId(userId, "saving project repositories");
   const connection = await getGithubConnection(userId);
   if (!connection)
     throw new GithubIntegrationError(
@@ -341,6 +362,7 @@ export async function assertGithubRepositoryConnected(
   userId: string,
   fullName: string,
 ) {
+  assertWorkspaceUserId(userId, "checking the connected repository");
   const { data, error } = await adminClient("checking the connected repository")
     .from("github_project_repositories")
     .select("repository_id")
@@ -360,6 +382,7 @@ export async function withGithubAccessToken<T>(
   userId: string,
   operation: (accessToken: string) => Promise<T>,
 ) {
+  assertWorkspaceUserId(userId, "loading the GitHub access token");
   const accessToken = await getGithubAccessToken(userId);
   try {
     return await operation(accessToken);
