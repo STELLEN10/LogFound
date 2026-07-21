@@ -22,10 +22,21 @@ export function TimeProvider({ children }: Readonly<{ children: React.ReactNode 
     const current = new Date();
     setNow(current);
 
-    const stored = window.sessionStorage.getItem(SESSION_KEY);
+    let stored: string | null = null;
+    try {
+      stored = window.sessionStorage.getItem(SESSION_KEY);
+    } catch {
+      // Session storage may be disabled by a privacy mode; the live clock still works.
+    }
     const sessionDate = stored ? new Date(stored) : current;
     const session = Number.isNaN(sessionDate.getTime()) ? current : sessionDate;
-    if (!stored) window.sessionStorage.setItem(SESSION_KEY, session.toISOString());
+    if (!stored) {
+      try {
+        window.sessionStorage.setItem(SESSION_KEY, session.toISOString());
+      } catch {
+        // Persistence is an enhancement; do not interrupt the workspace clock.
+      }
+    }
     setSessionStartedAt(session);
 
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -48,4 +59,3 @@ export function useCurrentTime(): TimeContextValue {
   if (!context) throw new Error("useCurrentTime must be used inside TimeProvider");
   return context;
 }
-
