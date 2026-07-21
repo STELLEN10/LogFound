@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isUuid, userIdForUsername, type AuthUser } from "./session";
+import { createWorkspaceUuid, isUuid, type AuthUser } from "./session";
 
 type SupabaseError = {
   code?: string;
@@ -50,6 +50,12 @@ function storageFailure(operation: string, error: unknown) {
 }
 
 function toAuthUser(row: WorkspaceUserRow, fallback: AuthUser): AuthUser {
+  if (!isUuid(row.id)) {
+    throw new WorkspaceUserStorageError(
+      "Supabase returned a workspace user with a non-UUID id.",
+      "22P02",
+    );
+  }
   return {
     id: row.id,
     username: row.username || fallback.username,
@@ -60,14 +66,15 @@ function toAuthUser(row: WorkspaceUserRow, fallback: AuthUser): AuthUser {
 export async function ensureWorkspaceUser(user: AuthUser, options: { required?: boolean } = {}): Promise<AuthUser> {
   // Demo sessions created by older builds may contain a username or a
   // provider subject in `id`. Never send that arbitrary value to a UUID
-  // column; derive the stable demo identity instead.
+  // column; generate a real RFC-4122 UUID instead. The username lookup below
+  // preserves the canonical identity for users already in the database.
   const normalizedUser = isUuid(user.id)
     ? user
-    : { ...user, id: await userIdForUsername(user.username) };
+    : { ...user, id: createWorkspaceUuid() };
   if (normalizedUser.id !== user.id) {
     console.warn("[auth] normalized a non-UUID workspace subject before Supabase write", {
       operation: "upsert logfound_users",
-      source: "username-derived UUID",
+      source: "generated RFC-4122 UUID",
     });
   }
   if (!isUuid(normalizedUser.id)) {
@@ -80,6 +87,22 @@ export async function ensureWorkspaceUser(user: AuthUser, options: { required?: 
   }
   try {
     const admin = createAdminClient();
+
+    // Username is the only stable identifier available to the demo
+    // credentials flow. Resolve an existing row before generating a new
+    // workspace id so repeat logins and OAuth callbacks keep the same UUID.
+    const { data: existing, error: lookupError } = await admin
+      .from("logfound_users")
+      .select("id,username,display_name")
+      .eq("username", normalizedUser.username)
+      .maybeSingle();
+    if (lookupError) {
+      const failure = storageFailure("loading the workspace user", lookupError);
+      if (options.required) throw failure;
+      return normalizedUser;
+    }
+    if (existing) return toAuthUser(existing as WorkspaceUserRow, normalizedUser);
+
     const { data, error } = await admin
       .from("logfound_users")
       .upsert(
@@ -95,7 +118,7 @@ export async function ensureWorkspaceUser(user: AuthUser, options: { required?: 
         const { data: existing, error: lookupError } = await admin
           .from("logfound_users")
           .select("id,username,display_name")
-          .eq("username", user.username)
+          .eq("username", normalizedUser.username)
           .maybeSingle();
         if (!lookupError && existing) return toAuthUser(existing as WorkspaceUserRow, normalizedUser);
         if (lookupError) {

@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { userIdForUsername, type AuthUser } from "./session";
+import { createWorkspaceUuid, type AuthUser } from "./session";
 
 const DEFAULT_USERNAME = "founder";
 const DEFAULT_DEMO_PASSWORD = "logfound-demo";
@@ -25,7 +25,7 @@ export async function authenticateCredentials(usernameInput: string, password: s
   const matches = passwordHash ? await bcrypt.compare(password, passwordHash) : timingSafePasswordMatch(password, process.env.LOGFOUND_DEMO_PASSWORD || (process.env.NODE_ENV === "production" ? "" : DEFAULT_DEMO_PASSWORD));
   if (!matches) return null;
 
-  return { id: await userIdForUsername(username), username, name: username === "founder" ? "Founder" : username };
+  return { id: createWorkspaceUuid(), username, name: username === "founder" ? "Founder" : username };
 }
 
 export function demoCredentialHint() {

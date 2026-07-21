@@ -20,17 +20,17 @@ function authSecret() {
   return new TextEncoder().encode("logfound-development-session-secret");
 }
 
-export async function userIdForUsername(username: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`logfound:user:${username.toLowerCase()}`));
-  const bytes = new Uint8Array(digest);
-  bytes[6] = (bytes[6] & 0x0f) | 0x50;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+/**
+ * Generate a workspace identity that is safe to write to PostgreSQL UUID
+ * columns. GitHub subjects, usernames, slugs, hashes, and timestamps are not
+ * UUIDs and must never be used as workspace identities.
+ */
+export function createWorkspaceUuid(): string {
+  return crypto.randomUUID();
 }
 
 export async function createSessionToken(user: AuthUser) {
-  const userId = isUuid(user.id) ? user.id : await userIdForUsername(user.username);
+  const userId = isUuid(user.id) ? user.id : createWorkspaceUuid();
   return new SignJWT({ username: user.username, name: user.name, kind: "logfound-demo" })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setSubject(userId)
@@ -44,7 +44,7 @@ export async function verifySessionToken(token: string | undefined): Promise<Aut
   try {
     const { payload } = await jwtVerify(token, authSecret(), { algorithms: ["HS256"] });
     if (payload.kind !== "logfound-demo" || typeof payload.sub !== "string" || typeof payload.username !== "string" || typeof payload.name !== "string" || typeof payload.exp !== "number") return null;
-    const userId = isUuid(payload.sub) ? payload.sub : await userIdForUsername(payload.username);
+    const userId = isUuid(payload.sub) ? payload.sub : createWorkspaceUuid();
     return { user: { id: userId, username: payload.username, name: payload.name }, expiresAt: payload.exp * 1000 };
   } catch {
     return null;
